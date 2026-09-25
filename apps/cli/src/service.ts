@@ -81,12 +81,16 @@ export async function runCalibration(options: {
   }
   const targetStore = options.promote ? options.store : new SqliteStore(":memory:");
   try {
+    const selectedSuite = options.suite ??
+      (provider === "openrouter" ? REDUNDANT_EXTRACTION_SUITE : SYNTHETIC_SUITE);
+    const seedCodecs = selectedSuite === REDUNDANT_EXTRACTION_SUITE
+      ? DEFAULT_CODECS.filter((codec) => codec.id === "context_dedupe") : DEFAULT_CODECS;
     const optimizer = new EvolutionaryOptimizer(adapter, targetStore);
     await optimizer.optimize({
       fingerprint: await adapter.getModelFingerprint(),
       taskClass: options.taskClass ?? "extraction",
-      suite: options.suite ?? (provider === "openrouter" ? REDUNDANT_EXTRACTION_SUITE : SYNTHETIC_SUITE),
-      seeds: DEFAULT_CODECS.map((definition) => ({
+      suite: selectedSuite,
+      seeds: seedCodecs.map((definition) => ({
         id: definition.id, version: "0.1.0", definition,
         definitionSha256: "", status: "experimental", parentVersion: null,
       })),

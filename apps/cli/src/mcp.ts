@@ -13,7 +13,7 @@ const result = (value: unknown) => ({
 
 export async function startMcpServer(): Promise<void> {
   const store = openStore();
-  const server = new McpServer({ name: "semantic-ir", version: "0.3.0" });
+  const server = new McpServer({ name: "semantic-ir", version: "0.3.1" });
   server.registerTool("analyze_prompt", {
     description: "Return a source-preserving Semantic IR with partial annotations. No provider call.",
     inputSchema: { prompt: z.string().min(1) },

@@ -9,7 +9,7 @@ A matriz conservadora está em `apps/cli/src/hosts.ts`. `semantic-ir integration
 ## Instalação local
 
 1. Execute `npm ci && npm run build` no repositório com Node.js 24 ou superior.
-2. Instale a CLI no mesmo sistema operacional em que o host executa seu MCP: `npm pack --workspace apps/cli` e `npm install -g ./semantic-ir-cli-0.3.0.tgz`.
+2. Instale a CLI no mesmo sistema operacional em que o host executa seu MCP: `npm pack --workspace apps/cli` e `npm install -g ./semantic-ir-cli-0.3.1.tgz`.
 3. Verifique `semantic-ir doctor` e `semantic-ir integrations status`.
 4. Gere artefatos com `semantic-ir integrations build --out ./dist`.
 5. Configure o provider e sua chave no terminal do mesmo ambiente: `semantic-ir credentials import --provider openrouter` e `semantic-ir configure --provider openrouter --model z-ai/glm-5.3-flash`. A chave é digitada sem eco e fica fora do plugin.
@@ -80,7 +80,7 @@ Abra uma nova sessão no host, confirme que o servidor MCP `semantic-ir` está c
 
 `doctor.providerKeyConfigured: true` só confirma a presença de uma chave, não que ela ainda seja válida. A confirmação vem da resposta real do provider. O custo pode ser `null` se o provider não o informar. Com `decision.mode: "original"` e `fallbackReason: "no_stable_profile"`, a chamada funcionou sem afirmar economia ainda não demonstrada.
 
-Para calibrar a classe `extraction` no OpenRouter, use `calibrate_model` com `model: "z-ai/glm-5.3-flash"`, `suite: "redundant-extraction"`, `allowSpend: true`, `maxRequests: 36`, `maxTokens: 60000`, `maxCostUsd: 0.05`, `maxDurationMs: 900000` e `maxOutputTokens: 256`. Esta operação faz várias chamadas pagas; leia o orçamento antes de autorizá-la. Depois consulte `get_calibration_report` e `get_active_profile`. `holdoutEvidence` mede somente a suite, e `promoted: false` significa que nenhum codec foi ativado. Para suites de produção, use a CLI com `--suite arquivo.json` e oracles próprios.
+Para calibrar a classe `extraction` no OpenRouter, use `calibrate_model` com `model: "z-ai/glm-5.3-flash"`, `suite: "redundant-extraction"`, `allowSpend: true`, `maxRequests: 36`, `maxTokens: 100000`, `maxCostUsd: 0.05`, `maxDurationMs: 900000` e `maxOutputTokens: 256`. Esta operação faz várias chamadas pagas; leia o orçamento antes de autorizá-la. Depois consulte `get_calibration_report` e `get_active_profile`. `holdoutEvidence` mede somente a suite, e `promoted: false` significa que nenhum codec foi ativado. Para suites de produção, use a CLI com `--suite arquivo.json` e oracles próprios.
 
 ### ChatGPT
 

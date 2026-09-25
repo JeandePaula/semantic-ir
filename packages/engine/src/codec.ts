@@ -40,9 +40,9 @@ function definition(id: string, strategy: CodecDefinition["strategy"], sep = ";"
 export const DEFAULT_CODECS: readonly CodecDefinition[] = [
   definition("original", "identity"),
   definition("spacing", "compact_spacing"),
+  definition("context_dedupe", "dedupe_context_lines"),
   definition("tagged_semicolon", "tagged", ";"),
   definition("tagged_pipe", "tagged", "|"),
-  definition("context_dedupe", "dedupe_context_lines"),
 ];
 
 function dedupeContextLines(ir: SemanticIR): string {
@@ -73,7 +73,9 @@ function dedupeContextLines(ir: SemanticIR): string {
     }
     offset = end;
   }
-  return output;
+  // Small reductions can cost more when the model emits extra reasoning tokens.
+  return Buffer.byteLength(source, "utf8") - Buffer.byteLength(output, "utf8") >= 2_048
+    ? output : source;
 }
 
 function compactSpacing(ir: SemanticIR): string {
@@ -162,7 +164,7 @@ export function compilePrompt(ir: SemanticIR, input: CodecDefinition): CompiledP
 }
 
 export function mutateElite(elite: readonly CodecDefinition[]): CodecDefinition[] {
-  return elite.flatMap((parent, index) => [
+  return elite.flatMap((parent, index) => parent.strategy === "dedupe_context_lines" ? [] : [
     {
       ...parent, id: "evo_" + index + "_tag",
       strategy: "tagged" as const,

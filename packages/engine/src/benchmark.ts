@@ -58,9 +58,9 @@ export const SYNTHETIC_SUITE: BenchmarkSuite = {
 function repeatedContextCase(id: string, split: BenchmarkCase["split"], color: string): BenchmarkCase {
   const fact = `The launch label color is ${color} and the same label is used in every approved view.`;
   return {
-    id, version: "0.1", split, taskClass: "extraction",
+    id, version: "0.2", split, taskClass: "extraction",
     prompt: "Extract the launch label color from CONTEXT. Reply with the uppercase color word and no other text.\n" +
-      "CONTEXT:\n" + Array(5).fill(fact).join("\n") +
+      "CONTEXT:\n" + Array(32).fill(fact).join("\n") +
       "\nQUESTION:\nWhat is the launch label color?",
     expectedLiterals: [], expectedConstraints: ["no"],
     oracleId: "exact", expectedOutput: color,
@@ -69,7 +69,7 @@ function repeatedContextCase(id: string, split: BenchmarkCase["split"], color: s
 
 /** Closed, paid evaluation cases. Savings here never imply savings on other workloads. */
 export const REDUNDANT_EXTRACTION_SUITE: BenchmarkSuite = {
-  id: "redundant-extraction", version: "0.1.0",
+  id: "redundant-extraction", version: "0.2.0",
   cases: [
     repeatedContextCase("rc-blue", "calibration", "BLUE"),
     repeatedContextCase("rc-green", "calibration", "GREEN"),
@@ -133,7 +133,36 @@ export class BudgetLedger {
     // Reserve the upper bound before the network call. A failure still consumes budget.
     this.usedTokens += upperTokens;
     this.usedCostUsd += upperCostUsd;
-    const response = await adapter.invoke({ ...request, timeoutMs: remainingBeforeInvoke });
+    let response: ModelResponse;
+    let retries = 0;
+    while (true) {
+      try {
+        const remainingMs = this.budget.maxDurationMs - (Date.now() - this.startedAt);
+        if (remainingMs <= 0) throw new Error("Duration budget exhausted");
+        response = await adapter.invoke({
+          ...request, timeoutMs: remainingMs,
+        });
+        break;
+      } catch (error) {
+        const rateLimit = error as Error & { status?: number; retryAfterMs?: number | null };
+        if (rateLimit.status !== 429 || retries >= 3) throw error;
+        const delayMs = Math.min(60_000, Math.max(1_000,
+          rateLimit.retryAfterMs ?? 10_000 * 2 ** retries));
+        if (this.usedRequests + 1 > this.budget.maxRequests) throw new Error("Request budget exhausted");
+        if (this.usedTokens + upperTokens > this.budget.maxTokens) throw new Error("Token budget exhausted");
+        if (this.usedCostUsd + upperCostUsd > this.budget.maxCostUsd) {
+          throw new Error("Cost budget exhausted");
+        }
+        if (this.budget.maxDurationMs - (Date.now() - this.startedAt) <= delayMs) {
+          throw new Error("Duration budget exhausted");
+        }
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        this.usedRequests++;
+        this.usedTokens += upperTokens;
+        this.usedCostUsd += upperCostUsd;
+        retries++;
+      }
+    }
     if (response.usage.inputTokens !== null && response.usage.inputTokens > upperInputTokens) {
       throw new Error("Provider input usage exceeded preflight reservation");
     }

@@ -74,7 +74,14 @@ export class OpenAIAdapter implements ModelAdapter {
     });
     if (!response.ok) {
       // Do not include provider response bodies: they may contain request content.
-      throw new Error(this.provider + " request failed with HTTP " + response.status);
+      const rawRetryAfter = response.headers.get("retry-after");
+      const seconds = Number(rawRetryAfter);
+      const retryAfterMs = rawRetryAfter === null ? null : Number.isFinite(seconds)
+        ? Math.max(0, seconds * 1_000)
+        : Math.max(0, Date.parse(rawRetryAfter) - Date.now());
+      throw Object.assign(new Error(this.provider + " request failed with HTTP " + response.status), {
+        status: response.status, retryAfterMs: Number.isFinite(retryAfterMs) ? retryAfterMs : null,
+      });
     }
     return response;
   }

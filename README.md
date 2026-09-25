@@ -42,12 +42,12 @@ O último comando envia uma requisição paga para sua conta. Você também pode
 
 O OpenRouter pode avaliar candidatos sem uma pré-contagem oficial: antes de cada chamada, o Semantic IR reserva um teto **conservador e estimado** a partir do tamanho em bytes, limite de saída e preço consultado no catálogo do OpenRouter. A requisição também limita o preço por token do provider. Depois de cada resposta, o sistema verifica tokens e custo efetivamente cobrados e interrompe a execução se o teto estimado for ultrapassado. **O limite local em USD não é uma garantia absoluta de cobrança**; para um teto externo, configure um limite de gasto na chave OpenRouter.
 
-Uma suite fechada de extração com contexto repetido permite comparar o prompt original a um codec que remove apenas linhas idênticas do bloco `CONTEXT`/`CONTEXTO`. Execute somente se aceitar as chamadas pagas:
+Uma suite fechada de extração com contexto longo e repetido permite comparar o prompt original a um codec que remove apenas linhas idênticas do bloco `CONTEXT`/`CONTEXTO`, quando a redução chega a 2 KiB. Execute somente se aceitar as chamadas pagas:
 
 ```sh
 semantic-ir calibrate --model z-ai/glm-5.3-flash --task extraction \
   --suite redundant-extraction --allow-spend \
-  --max-requests 36 --max-tokens 60000 --max-cost-usd 0.05 \
+  --max-requests 36 --max-tokens 100000 --max-cost-usd 0.05 \
   --max-duration-ms 900000 --max-output-tokens 256
 semantic-ir calibration report
 semantic-ir profile
@@ -58,15 +58,8 @@ O relatório separa custo medido, reserva de orçamento e economia observada **s
 Se `promoted` for `true`, experimente uma entrada nova da mesma classe. Esta chamada também é paga; `decision.mode` deve ser `compiled` e a resposta deve ser `MAGENTA`:
 
 ```sh
-PROMPT='Extract the launch label color from CONTEXT. Reply with the uppercase color word and no other text.
-CONTEXT:
-The launch label color is MAGENTA and the same label is used in every approved view.
-The launch label color is MAGENTA and the same label is used in every approved view.
-The launch label color is MAGENTA and the same label is used in every approved view.
-The launch label color is MAGENTA and the same label is used in every approved view.
-The launch label color is MAGENTA and the same label is used in every approved view.
-QUESTION:
-What is the launch label color?'
+FACT='The launch label color is MAGENTA and the same label is used in every approved view.'
+PROMPT="$(printf 'Extract the launch label color from CONTEXT. Reply with the uppercase color word and no other text.\nCONTEXT:\n'; for i in {1..32}; do printf '%s\n' "$FACT"; done; printf 'QUESTION:\nWhat is the launch label color?')"
 semantic-ir invoke --allow-spend --max-output-tokens 256 --prompt "$PROMPT"
 ```
 
@@ -76,7 +69,7 @@ O perfil da calibração é específico para `extraction` e para o fingerprint d
 
 ```sh
 npm pack --workspace apps/cli
-npm install -g ./semantic-ir-cli-0.3.0.tgz
+npm install -g ./semantic-ir-cli-0.3.1.tgz
 semantic-ir doctor
 semantic-ir integrations build --out ./dist
 semantic-ir install codex
