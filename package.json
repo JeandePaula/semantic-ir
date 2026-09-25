@@ -1,0 +1,36 @@
+{
+  "name": "semantic-ir-monorepo",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "tsc -b && npm run schema:export && npm run cli:bundle && npm run integrations:build",
+    "schema:export": "node scripts/export-schema.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint packages apps --max-warnings 0",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "integrations:build": "node scripts/build-integrations.mjs",
+    "cli:bundle": "node scripts/bundle-cli.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^26.6.2",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.0.0",
+    "fast-check": "^4.10.2",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^5.0.1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "semantic-ir-community",
+  "owner": { "name": "Semantic IR contributors" },
+  "plugins": [
+    {
+      "name": "semantic-ir",
+      "source": "./integrations/claude-code",
+      "description": "Semantic prompt analysis and controlled downstream optimization."
+    }
+  ]
+}

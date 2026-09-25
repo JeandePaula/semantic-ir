@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "semantic-ir": {
+      "command": "semantic-ir",
+      "args": ["mcp"]
+    }
+  }
+}

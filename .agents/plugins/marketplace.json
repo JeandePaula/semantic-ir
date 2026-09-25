@@ -1,0 +1,12 @@
+{
+  "name": "semantic-ir-community",
+  "interface": { "displayName": "Semantic IR Community" },
+  "plugins": [
+    {
+      "name": "semantic-ir",
+      "source": { "source": "local", "path": "./integrations/codex" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

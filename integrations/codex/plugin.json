@@ -1,0 +1,15 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "semantic-ir",
+  "version": "0.1.0",
+  "description": "Inspect and benchmark semantic prompt compilation with explicit cost controls.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Semantic IR",
+        "shortDescription": "Inspect prompts and measured downstream optimization.",
+        "category": "Developer Tools"
+      }
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://semantic-ir.local/schemas/codec-0.1.schema.json",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "codec/0.1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,15}$"
+    },
+    "strategy": {
+      "type": "string",
+      "enum": [
+        "identity",
+        "compact_spacing",
+        "tagged"
+      ]
+    },
+    "aliases": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_]{0,15}$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_]{0,15}$"
+      }
+    },
+    "separator": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 3,
+      "pattern": "^[|;:=~,. ]+$"
+    },
+    "assignment": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 3,
+      "pattern": "^[|;:=~,. ]+$"
+    },
+    "fieldOrder": {
+      "maxItems": 30,
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nesting": {
+      "type": "string",
+      "enum": [
+        "nested",
+        "flat"
+      ]
+    },
+    "flattenSingletons": {
+      "type": "boolean"
+    },
+    "referenceLiterals": {
+      "type": "boolean"
+    },
+    "referenceEntities": {
+      "type": "boolean"
+    },
+    "enumAliases": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_]{0,15}$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_]{0,15}$"
+      }
+    },
+    "constraintEncoding": {
+      "type": "string",
+      "enum": [
+        "explicit",
+        "symbolic"
+      ]
+    },
+    "relationshipEncoding": {
+      "type": "string",
+      "enum": [
+        "explicit",
+        "symbolic"
+      ]
+    },
+    "omitNull": {
+      "type": "boolean"
+    },
+    "omitDefaults": {
+      "type": "boolean"
+    },
+    "omitNonsemanticMetadata": {
+      "type": "boolean"
+    },
+    "deduplicateRepeatedValues": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "strategy",
+    "aliases",
+    "separator",
+    "assignment",
+    "fieldOrder",
+    "nesting",
+    "flattenSingletons",
+    "referenceLiterals",
+    "referenceEntities",
+    "enumAliases",
+    "constraintEncoding",
+    "relationshipEncoding",
+    "omitNull",
+    "omitDefaults",
+    "omitNonsemanticMetadata",
+    "deduplicateRepeatedValues"
+  ],
+  "additionalProperties": false
+}

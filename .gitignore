@@ -1,0 +1,12 @@
+node_modules/
+dist/
+apps/cli/assets/
+apps/cli/bundle/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.tgz

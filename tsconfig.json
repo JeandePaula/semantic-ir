@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/semantic-ir" },
+    { "path": "packages/lossless-islands" },
+    { "path": "packages/semantic-analyzer" },
+    { "path": "packages/core" },
+    { "path": "packages/engine" },
+    { "path": "apps/cli" }
+  ]
+}

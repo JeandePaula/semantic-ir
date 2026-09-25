@@ -1,0 +1,5 @@
+{
+  "name": "semantic-ir",
+  "version": "0.1.0",
+  "description": "Analyze and benchmark semantic prompt compilation for controlled LLM calls."
+}

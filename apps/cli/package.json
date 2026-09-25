@@ -1,0 +1,13 @@
+{
+  "name": "@semantic-ir/cli",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "semantic-ir": "./bundle/main.js" },
+  "main": "./bundle/main.js",
+  "files": ["bundle", "assets", "README.md", "LICENSE"],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^4.0.0"
+  }
+}
