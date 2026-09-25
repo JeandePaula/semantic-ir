@@ -10,3 +10,6 @@ coverage/
 *.db
 *.sqlite
 *.tgz
+*.key
+*.pem
+.config/semantic-ir/
