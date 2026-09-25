@@ -6,6 +6,7 @@ import type {
   TaskClass, UsageMetrics,
 } from "@semantic-ir/core";
 import { CodecDefinitionSchema } from "./codec.js";
+import type { OptimizationReport } from "./optimizer.js";
 
 export interface StoredProfile {
   readonly provider: string;
@@ -58,6 +59,10 @@ export class SqliteStore {
         occurred_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value_json TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS calibration_runs (
+        id TEXT PRIMARY KEY, provider TEXT NOT NULL, model TEXT NOT NULL,
+        task_class TEXT NOT NULL, report_json TEXT NOT NULL, created_at TEXT NOT NULL
+      );
     `);
     const historyColumns = this.db.prepare("PRAGMA table_info(profile_history)").all() as
       Array<{ name: string }>;
@@ -195,6 +200,22 @@ export class SqliteStore {
     `).get() as { measured: number | null; estimated: number | null };
     return { requests: totals.requests, fallbacks: totals.fallbacks ?? 0, byScope,
       measuredCostUsd: costs.measured, estimatedCostUsd: costs.estimated };
+  }
+
+  saveCalibrationReport(provider: string, model: string, taskClass: TaskClass,
+    report: OptimizationReport): void {
+    this.db.prepare(`
+      INSERT INTO calibration_runs(id,provider,model,task_class,report_json,created_at)
+      VALUES(?,?,?,?,?,?)
+    `).run(report.run.id, provider, model, taskClass, JSON.stringify(report), new Date().toISOString());
+  }
+
+  getLatestCalibrationReport(provider: string, model: string): OptimizationReport | null {
+    const row = this.db.prepare(`
+      SELECT report_json FROM calibration_runs WHERE provider=? AND model=?
+      ORDER BY created_at DESC, rowid DESC LIMIT 1
+    `).get(provider, model) as { report_json: string } | undefined;
+    return row ? JSON.parse(row.report_json) as OptimizationReport : null;
   }
 
   setSetting(key: string, value: unknown): void {

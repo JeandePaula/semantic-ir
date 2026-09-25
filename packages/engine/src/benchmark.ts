@@ -55,35 +55,76 @@ export const SYNTHETIC_SUITE: BenchmarkSuite = {
   ],
 };
 
+function repeatedContextCase(id: string, split: BenchmarkCase["split"], color: string): BenchmarkCase {
+  const fact = `The launch label color is ${color} and the same label is used in every approved view.`;
+  return {
+    id, version: "0.1", split, taskClass: "extraction",
+    prompt: "Extract the launch label color from CONTEXT. Reply with the uppercase color word and no other text.\n" +
+      "CONTEXT:\n" + Array(5).fill(fact).join("\n") +
+      "\nQUESTION:\nWhat is the launch label color?",
+    expectedLiterals: [], expectedConstraints: ["no"],
+    oracleId: "exact", expectedOutput: color,
+  };
+}
+
+/** Closed, paid evaluation cases. Savings here never imply savings on other workloads. */
+export const REDUNDANT_EXTRACTION_SUITE: BenchmarkSuite = {
+  id: "redundant-extraction", version: "0.1.0",
+  cases: [
+    repeatedContextCase("rc-blue", "calibration", "BLUE"),
+    repeatedContextCase("rc-green", "calibration", "GREEN"),
+    repeatedContextCase("rv-amber", "validation", "AMBER"),
+    repeatedContextCase("rv-cyan", "validation", "CYAN"),
+    repeatedContextCase("rh-orange", "holdout", "ORANGE"),
+    repeatedContextCase("rh-violet", "holdout", "VIOLET"),
+  ],
+};
+
 export class BudgetLedger {
   usedRequests = 0;
   usedTokens = 0;
   usedCostUsd = 0;
+  measuredCostUsd: number | null = null;
+  budgetMethod: "provider_count" | "conservative_byte_envelope" = "provider_count";
   private readonly startedAt = Date.now();
 
   constructor(readonly budget: CalibrationBudget) {}
 
   async invoke(adapter: ModelAdapter, request: ModelRequest): Promise<ModelResponse> {
-    if (!adapter.countTokens || !adapter.estimateCost) {
-      throw new Error("Strict calibration requires token counting and a configured price");
+    const preflight = await adapter.preflight?.(request);
+    const requestSlots = preflight ? 1 : 2;
+    if (this.usedRequests + requestSlots > this.budget.maxRequests) {
+      throw new Error("Request budget exhausted");
     }
-    if (this.usedRequests + 2 > this.budget.maxRequests) throw new Error("Request budget exhausted");
     if (Date.now() - this.startedAt >= this.budget.maxDurationMs) throw new Error("Duration budget exhausted");
-    const remainingBeforeCount = this.budget.maxDurationMs - (Date.now() - this.startedAt);
-    this.usedRequests++;
-    const count = await adapter.countTokens({ ...request, timeoutMs: remainingBeforeCount });
-    if (!count) throw new Error("Token counting unavailable; calibration stopped");
-    const upperTokens = count.inputTokens + (request.maxOutputTokens ?? 0);
-    const upperCost = adapter.estimateCost({
-      inputTokens: count.inputTokens, cachedInputTokens: 0,
-      outputTokens: request.maxOutputTokens ?? 0, reasoningTokens: null,
-      totalTokens: upperTokens, source: count.source,
-    });
-    if (upperCost?.amountUsd === null || upperCost?.amountUsd === undefined) {
-      throw new Error("Cost rate unavailable; calibration stopped");
+    let upperInputTokens: number;
+    let upperCostUsd: number;
+    if (preflight) {
+      this.budgetMethod = preflight.method;
+      upperInputTokens = preflight.upperInputTokens;
+      upperCostUsd = preflight.upperCostUsd;
+    } else {
+      if (!adapter.countTokens || !adapter.estimateCost) {
+        throw new Error("Calibration requires token preflight and a configured price");
+      }
+      const remainingBeforeCount = this.budget.maxDurationMs - (Date.now() - this.startedAt);
+      this.usedRequests++;
+      const count = await adapter.countTokens({ ...request, timeoutMs: remainingBeforeCount });
+      if (!count) throw new Error("Token counting unavailable; calibration stopped");
+      upperInputTokens = count.inputTokens;
+      const upperCost = adapter.estimateCost({
+        inputTokens: count.inputTokens, cachedInputTokens: 0,
+        outputTokens: request.maxOutputTokens ?? 0, reasoningTokens: null,
+        totalTokens: count.inputTokens + (request.maxOutputTokens ?? 0), source: count.source,
+      });
+      if (upperCost?.amountUsd === null || upperCost?.amountUsd === undefined) {
+        throw new Error("Cost rate unavailable; calibration stopped");
+      }
+      upperCostUsd = upperCost.amountUsd;
     }
+    const upperTokens = upperInputTokens + (request.maxOutputTokens ?? 0);
     if (this.usedTokens + upperTokens > this.budget.maxTokens) throw new Error("Token budget exhausted");
-    if (this.usedCostUsd + upperCost.amountUsd > this.budget.maxCostUsd) {
+    if (this.usedCostUsd + upperCostUsd > this.budget.maxCostUsd) {
       throw new Error("Cost budget exhausted");
     }
     const remainingBeforeInvoke = this.budget.maxDurationMs - (Date.now() - this.startedAt);
@@ -91,10 +132,16 @@ export class BudgetLedger {
     this.usedRequests++;
     // Reserve the upper bound before the network call. A failure still consumes budget.
     this.usedTokens += upperTokens;
-    this.usedCostUsd += upperCost.amountUsd;
+    this.usedCostUsd += upperCostUsd;
     const response = await adapter.invoke({ ...request, timeoutMs: remainingBeforeInvoke });
-    if (response.usage.inputTokens !== null && response.usage.inputTokens > count.inputTokens) {
-      throw new Error("Provider input usage exceeded count endpoint result");
+    if (response.usage.inputTokens !== null && response.usage.inputTokens > upperInputTokens) {
+      throw new Error("Provider input usage exceeded preflight reservation");
+    }
+    if (response.cost?.status === "measured" && response.cost.amountUsd !== null) {
+      this.measuredCostUsd = (this.measuredCostUsd ?? 0) + response.cost.amountUsd;
+      if (preflight && response.cost.amountUsd > upperCostUsd + 1e-9) {
+        throw new Error("Provider cost exceeded conservative preflight reservation");
+      }
     }
     return response;
   }
@@ -104,8 +151,10 @@ export interface CaseResult {
   readonly caseId: string;
   readonly split: BenchmarkCase["split"];
   readonly evaluation: EvaluationResult;
-  readonly baseline: { inputTokens: number | null; outputTokens: number | null; latencyMs: number; costUsd: number | null };
-  readonly candidate: { inputTokens: number | null; outputTokens: number | null; latencyMs: number; costUsd: number | null };
+  readonly baseline: { inputTokens: number | null; outputTokens: number | null; latencyMs: number;
+    costUsd: number | null; costEvidence: "measured" | "estimated" | "unavailable" };
+  readonly candidate: { inputTokens: number | null; outputTokens: number | null; latencyMs: number;
+    costUsd: number | null; costEvidence: "measured" | "estimated" | "unavailable" };
 }
 
 export async function benchmarkCodec(options: {
@@ -138,19 +187,31 @@ export async function benchmarkCodec(options: {
       prompt: compiled.text, mode: "safe", maxOutputTokens, scope: "application_request",
     });
     const evaluation = evaluateCase(testCase, ir, compiled, baseline, candidate);
-    const baseCost = options.adapter.estimateCost?.(baseline.usage)?.amountUsd ?? null;
-    const candidateCost = options.adapter.estimateCost?.(candidate.usage)?.amountUsd ?? null;
+    const costFor = (response: ModelResponse) => {
+      if (response.cost?.status === "measured" && response.cost.amountUsd !== null) {
+        return { costUsd: response.cost.amountUsd, costEvidence: "measured" as const };
+      }
+      if (options.adapter.getCapabilities().tokenCounting) {
+        const estimate = options.adapter.estimateCost?.(response.usage);
+        if (estimate?.amountUsd !== null && estimate?.amountUsd !== undefined) {
+          return { costUsd: estimate.amountUsd, costEvidence: "estimated" as const };
+        }
+      }
+      return { costUsd: null, costEvidence: "unavailable" as const };
+    };
+    const baseCost = costFor(baseline);
+    const candidateCost = costFor(candidate);
     results.push({
       caseId: testCase.id, split: testCase.split, evaluation,
       baseline: {
         inputTokens: baseline.usage.inputTokens,
         outputTokens: baseline.usage.outputTokens,
-        latencyMs: baseline.latencyMs, costUsd: baseCost,
+        latencyMs: baseline.latencyMs, ...baseCost,
       },
       candidate: {
         inputTokens: candidate.usage.inputTokens,
         outputTokens: candidate.usage.outputTokens,
-        latencyMs: candidate.latencyMs, costUsd: candidateCost,
+        latencyMs: candidate.latencyMs, ...candidateCost,
       },
     });
   }

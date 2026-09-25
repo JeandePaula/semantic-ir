@@ -37,11 +37,18 @@ export function createGateway(store: SqliteStore) {
         return;
       }
       if (request.method === "GET" && request.url === "/metrics") {
-        send(response, 200, store.metricsSummary());
+        const model = store.getSetting<string>("defaultModel");
+        const report = model ? store.getLatestCalibrationReport(providerFor(store), model) : null;
+        send(response, 200, { ...store.metricsSummary(),
+          latestHoldoutEvidence: report?.holdoutEvidence ?? null,
+          productionSavings: "unavailable" });
         return;
       }
       if (request.method === "GET" && request.url === "/dashboard") {
         const metrics = store.metricsSummary();
+        const model = store.getSetting<string>("defaultModel");
+        const holdout = model
+          ? store.getLatestCalibrationReport(providerFor(store), model)?.holdoutEvidence : null;
         const rows = metrics.byScope.map((item) =>
           "<tr><td>" + escapeHtml(item.scope) + "</td><td>" + item.requests + "</td></tr>").join("");
         response.writeHead(200, {
@@ -58,7 +65,10 @@ export function createGateway(store: SqliteStore) {
           (metrics.measuredCostUsd === null ? "unavailable" : metrics.measuredCostUsd.toFixed(8)) + "</p>" +
           "<p>Estimated inference cost (USD): " +
           (metrics.estimatedCostUsd === null ? "unavailable" : metrics.estimatedCostUsd.toFixed(8)) + "</p>" +
-          "<p>Verified savings: unavailable</p>" +
+          "<p>Latest holdout sample savings: " +
+          (holdout ? holdout.savingsPercent.toFixed(2) + "% (" + holdout.cases +
+            " cases; " + holdout.costEvidence + " cost)" : "unavailable") + "</p>" +
+          "<p>Production savings: unavailable</p>" +
           "<p>Host primary prompt optimization: unavailable</p>" +
           "<table><tr><th>Optimization scope</th><th>Requests</th></tr>" + rows + "</table></html>");
         return;

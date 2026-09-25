@@ -8,7 +8,7 @@ const separator = z.string().min(1).max(3).regex(/^[|;:=~,. ]+$/);
 export const CodecDefinitionSchema = z.strictObject({
   schemaVersion: z.literal("codec/0.1"),
   id: token,
-  strategy: z.enum(["identity", "compact_spacing", "tagged"]),
+  strategy: z.enum(["identity", "compact_spacing", "tagged", "dedupe_context_lines"]),
   aliases: z.record(token, token),
   separator,
   assignment: separator,
@@ -42,7 +42,39 @@ export const DEFAULT_CODECS: readonly CodecDefinition[] = [
   definition("spacing", "compact_spacing"),
   definition("tagged_semicolon", "tagged", ";"),
   definition("tagged_pipe", "tagged", "|"),
+  definition("context_dedupe", "dedupe_context_lines"),
 ];
+
+function dedupeContextLines(ir: SemanticIR): string {
+  const source = ir.source.text;
+  if (ir.intent.task !== "extraction" ||
+      /\b(?:how many|count|frequency|occurrences|repetitions|quantas vezes|contagem|frequ[eê]ncia|repeti[çc][oõ]es|duplicad[oa]s?)\b/i.test(source)) {
+    return source;
+  }
+  const seen = new Set<string>();
+  let insideContext = false;
+  let offset = 0;
+  let output = "";
+  for (const line of source.match(/[^\n]*\n|[^\n]+$/g) ?? []) {
+    const content = line.replace(/\r?\n$/, "");
+    const trimmed = content.trim();
+    if (/^(?:context|contexto)\s*:/i.test(trimmed)) {
+      insideContext = true;
+      seen.clear();
+    } else if (/^(?:question|pergunta|task|tarefa|answer|resposta)\s*:/i.test(trimmed)) {
+      insideContext = false;
+    }
+    const end = offset + line.length;
+    const protectedSpan = [...ir.literals, ...ir.constraints].some((span) =>
+      span.start < end && span.end > offset);
+    if (!insideContext || trimmed.length < 32 || protectedSpan || !seen.has(content)) {
+      output += line;
+      if (insideContext && trimmed.length >= 32) seen.add(content);
+    }
+    offset = end;
+  }
+  return output;
+}
 
 function compactSpacing(ir: SemanticIR): string {
   const source = ir.source.text;
@@ -100,6 +132,9 @@ export function compilePrompt(ir: SemanticIR, input: CodecDefinition): CompiledP
       break;
     case "compact_spacing":
       text = compactSpacing(ir);
+      break;
+    case "dedupe_context_lines":
+      text = dedupeContextLines(ir);
       break;
     case "tagged": {
       const aliases = codec.aliases;

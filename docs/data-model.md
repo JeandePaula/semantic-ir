@@ -9,9 +9,10 @@ O MVP usa `node:sqlite` no arquivo `~/.semantic-ir/semantic-ir.sqlite`, substitu
 | `profile_history` | Promoções e rollback com data. |
 | `metrics` | Request ID, optimization scope, modelo, tarefa, codec, fallback, usage, custo estimado e latência. |
 | `settings` | Modelo padrão e tabela de preço fornecida pelo usuário. |
+| `calibration_runs` | Relatório de cada calibração: orçamento reservado, gasto medido, avaliações por caso, decisão e evidência dos casos holdout. |
 
 `usage_json` tem input, cached input, output, reasoning e total, cada um nullable, mais a origem. Cached input é subconjunto de input; a relação de reasoning com output depende do contrato do provider. `cost_json` pode usar custo reportado pelo OpenRouter (`measured`) ou combinar usage observado com preços configurados (`estimated`). Ausência de dados permanece `null`, nunca vira economia zero.
 
-O banco não armazena automaticamente casos privados, API keys ou texto das chamadas. O benchmark sintético é distribuído em código. A CLI não ativa treinamento com pedidos reais.
+O banco não armazena automaticamente casos privados, API keys ou texto das chamadas. O relatório de calibração grava IDs dos casos e métricas, sem os textos dos prompts ou respostas. As suites sintéticas são distribuídas em código; suites próprias ficam no arquivo fornecido pelo usuário. A CLI não ativa treinamento com pedidos reais.
 
-Para uma versão SaaS, o desenho deve migrar para entidades imutáveis de versão de codec, runs de otimização, avaliações por caso, fingerprints históricos e métricas de calibração separadas de inferência do cliente. Essa migração ainda não existe; o armazenamento atual é local e de usuário único.
+Para uma versão SaaS, o desenho deve migrar para entidades imutáveis de versão de codec, avaliações por caso e fingerprints históricos, com isolamento entre usuários. Essa migração ainda não existe; o armazenamento atual é local e de usuário único.

@@ -12,13 +12,13 @@ npm pack --workspace apps/cli
 
 Depois, instale o tarball em um diretório vazio e execute `semantic-ir doctor` e `semantic-ir integrations build --out ./dist`. O teste automatizado MCP abre um processo stdio real; o gateway é testado com provider simulado. A suíte não chama a API OpenAI. Confira `GET /health`, `/metrics` e `/dashboard` ao iniciar `semantic-ir proxy --port 8787`.
 
-Verifique nos hosts reais antes de uma release: instale o plugin, confirme a skill, execute as ferramentas MCP `doctor` e `invoke_prompt` com uma chave válida, e confira resposta, usage e custo do provider. Repita após mudança de versão do host. Codex Windows reconheceu o plugin e o MCP via ponte WSL neste ambiente; Claude Code e Antigravity ainda precisam da verificação no próprio host.
+Verifique nos hosts reais antes de uma release: instale o plugin, confirme a skill, execute as ferramentas MCP `doctor` e `invoke_prompt` com uma chave válida, e confira resposta, usage e custo do provider. Repita após mudança de versão do host. O usuário confirmou a chamada real dentro do Codex; Claude Code confirmou conexão MCP no WSL; o Antigravity tem o pacote copiado no Windows, mas ainda precisa da verificação no IDE.
 
 ## Experimento com modelo real
 
 Para calibração OpenAI, defina `OPENAI_API_KEY` apenas no ambiente do processo. Configure um modelo e **os preços vigentes da sua conta** em USD por milhão de tokens. Execute `semantic-ir benchmark --task extraction --allow-spend` com `--max-requests`, `--max-tokens`, `--max-cost-usd` e `--max-duration-ms`. Revise baseline, candidato e resultado por split. Só então use `semantic-ir calibrate` para permitir promoção estável. O comando retorna falha sem casos com oracle nos três splits. O custo calculado usa usage do provider e tabela de preços configurada pelo usuário; é estimado, não uma fatura oficial. O orçamento em USD depende da correção dessa tabela.
 
-Para uma chamada simples no OpenRouter, use `semantic-ir configure --provider openrouter --model z-ai/glm-5.3-flash`, importe a chave com `semantic-ir credentials import --provider openrouter` e rode `semantic-ir invoke --allow-spend --max-output-tokens 256 --prompt "Responda apenas OK."`. O resultado identifica usage e custo medido se o provider os fornecer. Calibração automática no OpenRouter está indisponível sem pré-contagem confiável.
+Para OpenRouter, configure `z-ai/glm-5.3-flash` e importe a chave no prompt oculto. `semantic-ir benchmark --model z-ai/glm-5.3-flash --task extraction --suite redundant-extraction --allow-spend --max-requests 36 --max-tokens 60000 --max-cost-usd 0.05 --max-duration-ms 900000 --max-output-tokens 256` mede original e candidatos sem ativar um profile. Se o relatório mostrar custo medido e sucesso nos três splits, `semantic-ir calibrate` com os mesmos limites pode promover o vencedor. `semantic-ir calibration report` recupera o último relatório. O teto OpenRouter é estimado localmente; configure um limite de gasto na chave para um teto externo. `holdoutEvidence` se refere apenas à suite, não a produção.
 
 ## Tornar disponível à comunidade
 

@@ -3,7 +3,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { analyzePrompt, sha256 } from "@semantic-ir/core";
 import type { TaskClass } from "@semantic-ir/core";
-import { compilePrompt, DEFAULT_CODECS, RuntimeRouter, validateCompiled } from "@semantic-ir/engine";
+import { compilePrompt, DEFAULT_CODECS, REDUNDANT_EXTRACTION_SUITE,
+  RuntimeRouter, SYNTHETIC_SUITE, validateCompiled } from "@semantic-ir/engine";
 import { adapterFor, openStore, providerFor, providerKey, runCalibration } from "./service.js";
 
 const result = (value: unknown) => ({
@@ -12,7 +13,7 @@ const result = (value: unknown) => ({
 
 export async function startMcpServer(): Promise<void> {
   const store = openStore();
-  const server = new McpServer({ name: "semantic-ir", version: "0.2.0" });
+  const server = new McpServer({ name: "semantic-ir", version: "0.3.0" });
   server.registerTool("analyze_prompt", {
     description: "Return a source-preserving Semantic IR with partial annotations. No provider call.",
     inputSchema: { prompt: z.string().min(1) },
@@ -59,6 +60,16 @@ export async function startMcpServer(): Promise<void> {
     description: "Return request counts, fallbacks, and separately labeled measured/estimated costs. No savings are inferred.",
     annotations: { readOnlyHint: true },
   }, () => result(store.metricsSummary()));
+
+  server.registerTool("get_calibration_report", {
+    description: "Return the latest measured calibration report for the configured provider and model, without prompt text.",
+    inputSchema: { model: z.string().min(1).optional() },
+    annotations: { readOnlyHint: true },
+  }, ({ model }) => {
+    const selectedModel = model ?? store.getSetting<string>("defaultModel");
+    if (!selectedModel) throw new Error("Configure a model first");
+    return result(store.getLatestCalibrationReport(providerFor(store), selectedModel));
+  });
 
   server.registerTool("get_runtime_decision", {
     description: "Predict local routing without calling a provider.",
@@ -114,17 +125,22 @@ export async function startMcpServer(): Promise<void> {
   });
 
   server.registerTool("calibrate_model", {
-    description: "PAID: calls the configured provider. Requires allowSpend=true and explicit hard budget.",
+    description: "PAID: calls the configured provider. Requires allowSpend=true and explicit budget; OpenRouter USD preflight is estimated.",
     inputSchema: {
       model: z.string().min(1), allowSpend: z.literal(true),
       maxRequests: z.number().int().positive(), maxTokens: z.number().int().positive(),
       maxCostUsd: z.number().positive(), maxDurationMs: z.number().int().positive(),
+      suite: z.enum(["redundant-extraction", "synthetic-exact"]).optional(),
+      maxOutputTokens: z.number().int().positive().optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
-  }, async ({ model, allowSpend, maxRequests, maxTokens, maxCostUsd, maxDurationMs }) =>
+  }, async ({ model, allowSpend, maxRequests, maxTokens, maxCostUsd, maxDurationMs,
+    suite, maxOutputTokens }) =>
     result(await runCalibration({
       store, model, allowSpend, promote: true,
       budget: { maxRequests, maxTokens, maxCostUsd, maxDurationMs },
+      ...(suite ? { suite: suite === "redundant-extraction" ? REDUNDANT_EXTRACTION_SUITE : SYNTHETIC_SUITE } : {}),
+      ...(maxOutputTokens ? { maxOutputTokens } : {}),
     })));
 
   server.registerTool("benchmark_codec", {
@@ -133,12 +149,17 @@ export async function startMcpServer(): Promise<void> {
       model: z.string().min(1), allowSpend: z.literal(true),
       maxRequests: z.number().int().positive(), maxTokens: z.number().int().positive(),
       maxCostUsd: z.number().positive(), maxDurationMs: z.number().int().positive(),
+      suite: z.enum(["redundant-extraction", "synthetic-exact"]).optional(),
+      maxOutputTokens: z.number().int().positive().optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
-  }, async ({ model, allowSpend, maxRequests, maxTokens, maxCostUsd, maxDurationMs }) =>
+  }, async ({ model, allowSpend, maxRequests, maxTokens, maxCostUsd, maxDurationMs,
+    suite, maxOutputTokens }) =>
     result(await runCalibration({
       store, model, allowSpend, promote: false,
       budget: { maxRequests, maxTokens, maxCostUsd, maxDurationMs },
+      ...(suite ? { suite: suite === "redundant-extraction" ? REDUNDANT_EXTRACTION_SUITE : SYNTHETIC_SUITE } : {}),
+      ...(maxOutputTokens ? { maxOutputTokens } : {}),
     })));
 
   await server.connect(new StdioServerTransport());

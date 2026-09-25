@@ -51,6 +51,7 @@ export class RuntimeRouter {
     if (!codec) return fallback("codec_missing");
     try {
       const compiled = compilePrompt(ir, codec);
+      if (compiled.text === prompt) return fallback("codec_no_change");
       return {
         decision: {
           ...base, mode: "compiled", codecVersion: compiled.codecId + "@" + compiled.codecVersion,

@@ -16,6 +16,6 @@ Nenhum dos formatos documentados é tratado como prova de que um plugin substitu
 
 - Métricas são atribuídas ao `OptimizationScope` controlado; o dashboard não anuncia economia do prompt primário.
 - A CLI deve estar no `PATH` do processo do agente para que o MCP stdio funcione.
-- Sem Claude CLI no ambiente de desenvolvimento atual, o pacote Claude tem validação de estrutura e testes do MCP compartilhado, mas ainda requer smoke test no host real antes de prometer compatibilidade operacional.
+- Os pacotes devem ser conferidos em cada host real após instalação ou atualização; o MCP compartilhado e a validação de estrutura não comprovam por si só o carregamento da skill no host.
 - A versão detectada do host é informativa; mudança de host exige novo teste, não inferência de suporte por semelhança de manifest.
 - Um diretório público universal de plugins pode exigir MCP remoto HTTPS; o pacote stdio é distribuível por repositório/marketplace local, sem alegação de aprovação em diretório oficial.

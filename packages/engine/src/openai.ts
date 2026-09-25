@@ -1,6 +1,6 @@
 import { sha256 } from "@semantic-ir/semantic-ir";
 import type {
-  CostMetrics, ModelAdapter, ModelCapabilities, ModelFingerprint,
+  BudgetPreflight, CostMetrics, ModelAdapter, ModelCapabilities, ModelFingerprint,
   ModelRequest, ModelResponse, TokenCount, UsageMetrics,
 } from "@semantic-ir/core";
 
@@ -65,7 +65,10 @@ export class OpenAIAdapter implements ModelAdapter {
     if (!this.apiKey) throw new Error(this.provider.toUpperCase() + " API key is required for provider calls");
     const response = await fetch(this.baseUrl + path, {
       method: "POST",
-      headers: { authorization: "Bearer " + this.apiKey, "content-type": "application/json" },
+      headers: {
+        authorization: "Bearer " + this.apiKey, "content-type": "application/json",
+        ...(this.provider === "openrouter" && this.price ? { "X-OpenRouter-Cache": "false" } : {}),
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -74,6 +77,49 @@ export class OpenAIAdapter implements ModelAdapter {
       throw new Error(this.provider + " request failed with HTTP " + response.status);
     }
     return response;
+  }
+
+  /** Catalog prices are a routing ceiling, never a substitute for measured billing. */
+  async discoverOpenRouterPrice(): Promise<OpenAIPrice> {
+    if (this.provider !== "openrouter") throw new Error("OpenRouter pricing requested for another provider");
+    if (!this.apiKey) throw new Error("OPENROUTER API key is required");
+    const [author, ...slugParts] = this.model.split("/");
+    if (!author || !slugParts.length) throw new Error("Invalid OpenRouter model slug");
+    const response = await fetch(this.baseUrl + "/v1/model/" +
+      encodeURIComponent(author) + "/" + encodeURIComponent(slugParts.join("/")), {
+      headers: { authorization: "Bearer " + this.apiKey }, signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) throw new Error("OpenRouter model pricing request failed with HTTP " + response.status);
+    const body = await response.json() as {
+      data?: { pricing?: { prompt?: string; completion?: string; request?: string } };
+    };
+    const raw = body.data?.pricing;
+    const input = Number(raw?.prompt);
+    const output = Number(raw?.completion);
+    const perRequest = Number(raw?.request ?? "0");
+    if (!Number.isFinite(input) || input <= 0 || !Number.isFinite(output) || output <= 0 ||
+        !Number.isFinite(perRequest) || perRequest !== 0) {
+      throw new Error("OpenRouter model has unsupported or unavailable text pricing");
+    }
+    return {
+      version: "openrouter-catalog-" + sha256(JSON.stringify(raw)).slice(0, 12),
+      inputUsdPerMillion: input * 1_000_000,
+      cachedInputUsdPerMillion: input * 1_000_000,
+      outputUsdPerMillion: output * 1_000_000,
+    };
+  }
+
+  async preflight(request: ModelRequest): Promise<BudgetPreflight | null> {
+    if (this.provider !== "openrouter" || !this.price || !request.maxOutputTokens) return null;
+    // Includes generous room for chat framing. Checked against provider usage after each call.
+    // This is a conservative estimate, not a verified tokenizer or a hard provider guarantee.
+    const upperInputTokens = 256 + 2 * Buffer.byteLength(request.prompt, "utf8");
+    return {
+      upperInputTokens,
+      upperCostUsd: (upperInputTokens * this.price.inputUsdPerMillion +
+        request.maxOutputTokens * this.price.outputUsdPerMillion) / 1_000_000,
+      method: "conservative_byte_envelope",
+    };
   }
 
   async forwardChatRaw(body: object): Promise<Response> {
@@ -98,6 +144,10 @@ export class OpenAIAdapter implements ModelAdapter {
         model: request.model,
         messages: [{ role: "user", content: request.prompt }],
         usage: { include: true },
+        ...(this.price ? { provider: { max_price: {
+          prompt: this.price.inputUsdPerMillion,
+          completion: this.price.outputUsdPerMillion,
+        } } } : {}),
         ...(request.maxOutputTokens === undefined ? {} : { max_tokens: request.maxOutputTokens }),
       }, request.timeoutMs);
       const body = await response.json() as ChatResponseJson;
@@ -193,6 +243,7 @@ export class OpenAIAdapter implements ModelAdapter {
       provider: this.provider, model: this.model, snapshot: this.resolvedModel,
       capabilities, fingerprintSha256: sha256(JSON.stringify({
         provider: this.provider, model: this.model, snapshot: this.resolvedModel, capabilities,
+        price: this.price,
       })),
       observedAt: new Date().toISOString(),
     };

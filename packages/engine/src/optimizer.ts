@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
+import { analyzePrompt } from "@semantic-ir/core";
 import type {
   CodecCandidate, CodecDefinition, CodecVersion, ModelAdapter,
   ModelResponse, OptimizationInput, OptimizationRun, Optimizer,
 } from "@semantic-ir/core";
 import { benchmarkCodec, BudgetLedger, type CaseResult } from "./benchmark.js";
-import { mutateElite } from "./codec.js";
+import { compilePrompt, mutateElite } from "./codec.js";
 import type { SqliteStore } from "./storage.js";
 
 function codecVersion(definition: CodecDefinition): CodecVersion {
@@ -21,6 +22,8 @@ function fitness(results: readonly CaseResult[]): number | null {
   if (results.some((item) => item.baseline.costUsd === null || item.candidate.costUsd === null) || base <= 0) {
     return null;
   }
+  if (results.some((item) => (item.candidate.costUsd ?? Infinity) >=
+      (item.baseline.costUsd ?? 0) * 0.99)) return null;
   if (candidate >= base * 0.99) return null;
   const costRatio = candidate / base;
   const baseLatency = results.reduce((sum, item) => sum + item.baseline.latencyMs, 0);
@@ -32,12 +35,17 @@ function fitness(results: readonly CaseResult[]): number | null {
 
 export interface OptimizationReport {
   readonly run: OptimizationRun;
+  readonly promoted?: boolean;
   readonly selectedCodecId: string | null;
   readonly selectionReason: string;
   readonly calibration: readonly CaseResult[];
   readonly validation: readonly CaseResult[];
   readonly holdout: readonly CaseResult[];
-  readonly costStatus: "calculated_from_measured_usage" | "unavailable";
+  readonly costStatus: "provider_measured" | "estimated_from_usage" | "unavailable";
+  readonly holdoutEvidence: {
+    cases: number; baselineCostUsd: number; candidateCostUsd: number;
+    savingsPercent: number; costEvidence: "measured" | "estimated";
+  } | null;
 }
 
 export class EvolutionaryOptimizer implements Optimizer {
@@ -52,7 +60,15 @@ export class EvolutionaryOptimizer implements Optimizer {
     const startedAt = new Date().toISOString();
     const ledger = new BudgetLedger(input.budget);
     const baselineCache = new Map<string, ModelResponse>();
-    const seeds = input.seeds.map((seed) => seed.definition);
+    const scoredCalibration = input.suite.cases.filter((item) =>
+      item.split === "calibration" && item.taskClass === input.taskClass &&
+      item.oracleId === "exact" && item.expectedOutput !== undefined);
+    const changesEveryCase = (codec: CodecDefinition): boolean => scoredCalibration.length > 0 &&
+      scoredCalibration.every((item) => {
+        try { return compilePrompt(analyzePrompt(item.prompt), codec).text !== item.prompt; }
+        catch { return false; }
+      });
+    const seeds = input.seeds.map((seed) => seed.definition).filter(changesEveryCase);
     const calibration = new Map<string, CaseResult[]>();
     const validation = new Map<string, CaseResult[]>();
     const holdout: CaseResult[] = [];
@@ -73,6 +89,7 @@ export class EvolutionaryOptimizer implements Optimizer {
         const results = await benchmarkCodec({
           adapter: this.adapter, codec, suite: input.suite, split: "calibration",
           taskClass: input.taskClass, ledger, baselineCache,
+          ...(input.maxOutputTokens ? { maxOutputTokens: input.maxOutputTokens } : {}),
         });
         calibration.set(codec.id, results);
         candidates.push({ codec: codecVersion(codec), fitness: fitness(results),
@@ -81,10 +98,11 @@ export class EvolutionaryOptimizer implements Optimizer {
       const firstElite = candidates.filter((item) => item.fitness !== null)
         .sort((a, b) => (b.fitness ?? 0) - (a.fitness ?? 0))
         .slice(0, 2);
-      for (const codec of mutateElite(firstElite.map((item) => item.codec.definition))) {
+      for (const codec of mutateElite(firstElite.map((item) => item.codec.definition)).filter(changesEveryCase)) {
         const results = await benchmarkCodec({
           adapter: this.adapter, codec, suite: input.suite, split: "calibration",
           taskClass: input.taskClass, ledger, baselineCache,
+          ...(input.maxOutputTokens ? { maxOutputTokens: input.maxOutputTokens } : {}),
         });
         calibration.set(codec.id, results);
         candidates.push({ codec: codecVersion(codec), fitness: fitness(results),
@@ -98,6 +116,7 @@ export class EvolutionaryOptimizer implements Optimizer {
           adapter: this.adapter, codec: candidate.codec.definition,
           suite: input.suite, split: "validation", taskClass: input.taskClass,
           ledger, baselineCache,
+          ...(input.maxOutputTokens ? { maxOutputTokens: input.maxOutputTokens } : {}),
         });
         validation.set(candidate.codec.id, results);
       }
@@ -115,6 +134,7 @@ export class EvolutionaryOptimizer implements Optimizer {
           adapter: this.adapter, codec: winner.definition,
           suite: input.suite, split: "holdout", taskClass: input.taskClass,
           ledger, baselineCache,
+          ...(input.maxOutputTokens ? { maxOutputTokens: input.maxOutputTokens } : {}),
         });
         holdout.push(...results);
         const holdoutScore = fitness(results);
@@ -140,17 +160,32 @@ export class EvolutionaryOptimizer implements Optimizer {
       fingerprintSha256: input.fingerprint.fingerprintSha256,
       taskClass: input.taskClass, candidates,
       usedRequests: ledger.usedRequests, usedTokens: ledger.usedTokens,
-      usedCostUsd: ledger.usedCostUsd, status,
+      usedCostUsd: ledger.usedCostUsd, measuredCostUsd: ledger.measuredCostUsd,
+      budgetMethod: ledger.budgetMethod, status,
     };
     const allResults = [...calibration.values()].flat().concat(
       ...[...validation.values()], holdout);
+    const evidenceAvailable = holdout.length > 0 && holdout.every((item) =>
+      item.evaluation.passedHardGates && item.baseline.costUsd !== null &&
+      item.candidate.costUsd !== null);
+    const baselineHoldoutCost = holdout.reduce((sum, item) => sum + (item.baseline.costUsd ?? 0), 0);
+    const candidateHoldoutCost = holdout.reduce((sum, item) => sum + (item.candidate.costUsd ?? 0), 0);
+    const allMeasured = allResults.length > 0 && allResults.every((item) =>
+      item.baseline.costEvidence === "measured" && item.candidate.costEvidence === "measured");
     this.lastReport = {
       run, selectedCodecId: selected?.id ?? null, selectionReason,
       calibration: [...calibration.values()].flat(),
       validation: [...validation.values()].flat(), holdout,
-      costStatus: allResults.length > 0 && allResults.every((item) =>
-        item.baseline.costUsd !== null && item.candidate.costUsd !== null)
-        ? "calculated_from_measured_usage" : "unavailable",
+      costStatus: allMeasured ? "provider_measured" :
+        allResults.length > 0 && allResults.every((item) =>
+          item.baseline.costUsd !== null && item.candidate.costUsd !== null)
+          ? "estimated_from_usage" : "unavailable",
+      holdoutEvidence: selected && evidenceAvailable && baselineHoldoutCost > 0 ? {
+        cases: holdout.length, baselineCostUsd: baselineHoldoutCost,
+        candidateCostUsd: candidateHoldoutCost,
+        savingsPercent: 100 * (1 - candidateHoldoutCost / baselineHoldoutCost),
+        costEvidence: allMeasured ? "measured" : "estimated",
+      } : null,
     };
     return run;
   }

@@ -1,6 +1,6 @@
 {
   "name": "semantic-ir",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Analyze and benchmark semantic prompt compilation for controlled LLM calls.",
   "author": { "name": "Jean de Paula" },
   "homepage": "https://github.com/JeandePaula/semantic-ir"

@@ -4,7 +4,7 @@ import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from "nod
 import type { BenchmarkSuite, CalibrationBudget, TaskClass } from "@semantic-ir/core";
 import {
   DEFAULT_CODECS, EvolutionaryOptimizer, OpenAIAdapter,
-  SqliteStore, SYNTHETIC_SUITE, type OpenAIPrice,
+  REDUNDANT_EXTRACTION_SUITE, SqliteStore, SYNTHETIC_SUITE, type OpenAIPrice,
   type OptimizationReport,
 } from "@semantic-ir/engine";
 
@@ -66,11 +66,18 @@ export async function runCalibration(options: {
   suite?: BenchmarkSuite;
   allowSpend: boolean;
   promote: boolean;
+  maxOutputTokens?: number;
 }): Promise<OptimizationReport> {
   if (!options.allowSpend) throw new Error("Calibration requires explicit allowSpend=true");
-  const adapter = adapterFor(options.store, options.model);
-  if (!adapter.getCapabilities().tokenCounting) {
-    throw new Error("Calibration unavailable: provider has no verified input token pre-count endpoint");
+  let adapter = adapterFor(options.store, options.model);
+  const provider = providerFor(options.store);
+  if (provider === "openrouter") {
+    const price = await adapter.discoverOpenRouterPrice();
+    options.store.setSetting("price:openrouter:" + options.model, price);
+    adapter = adapterFor(options.store, options.model);
+  }
+  if (!adapter.getCapabilities().tokenCounting && provider !== "openrouter") {
+    throw new Error("Calibration unavailable: provider has no budget preflight");
   }
   const targetStore = options.promote ? options.store : new SqliteStore(":memory:");
   try {
@@ -78,15 +85,20 @@ export async function runCalibration(options: {
     await optimizer.optimize({
       fingerprint: await adapter.getModelFingerprint(),
       taskClass: options.taskClass ?? "extraction",
-      suite: options.suite ?? SYNTHETIC_SUITE,
+      suite: options.suite ?? (provider === "openrouter" ? REDUNDANT_EXTRACTION_SUITE : SYNTHETIC_SUITE),
       seeds: DEFAULT_CODECS.map((definition) => ({
         id: definition.id, version: "0.1.0", definition,
         definitionSha256: "", status: "experimental", parentVersion: null,
       })),
       budget: options.budget,
+      maxOutputTokens: options.maxOutputTokens ?? (provider === "openrouter" ? 256 : 64),
     });
     if (!optimizer.lastReport) throw new Error("Optimizer did not produce a report");
-    return optimizer.lastReport;
+    const report = { ...optimizer.lastReport,
+      promoted: options.promote && optimizer.lastReport.selectedCodecId !== null };
+    options.store.saveCalibrationReport(provider, options.model,
+      options.taskClass ?? "extraction", report);
+    return report;
   } finally {
     if (!options.promote) targetStore.close();
   }

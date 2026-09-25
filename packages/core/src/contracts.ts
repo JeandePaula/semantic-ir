@@ -56,7 +56,7 @@ export interface AgentPluginAdapter {
 export interface CodecDefinition {
   readonly schemaVersion: "codec/0.1";
   readonly id: string;
-  readonly strategy: "identity" | "compact_spacing" | "tagged";
+  readonly strategy: "identity" | "compact_spacing" | "tagged" | "dedupe_context_lines";
   readonly aliases: Partial<Record<keyof SemanticIR, string>>;
   readonly separator: string;
   readonly assignment: string;
@@ -148,10 +148,18 @@ export interface TokenCount {
   readonly source: "provider_count_endpoint" | "official_tokenizer";
 }
 
+/** An estimated ceiling for one call; it is not a provider token count. */
+export interface BudgetPreflight {
+  readonly upperInputTokens: number;
+  readonly upperCostUsd: number;
+  readonly method: "conservative_byte_envelope";
+}
+
 export interface ModelAdapter {
   invoke(request: ModelRequest): Promise<ModelResponse>;
   stream?(request: ModelRequest): AsyncIterable<ModelStreamEvent>;
   countTokens?(request: ModelRequest): Promise<TokenCount | null>;
+  preflight?(request: ModelRequest): Promise<BudgetPreflight | null>;
   estimateCost?(usage: UsageMetrics): CostMetrics | null;
   getCapabilities(): ModelCapabilities;
   getModelFingerprint(): Promise<ModelFingerprint>;
@@ -241,6 +249,7 @@ export interface OptimizationInput {
   readonly suite: BenchmarkSuite;
   readonly seeds: readonly CodecVersion[];
   readonly budget: CalibrationBudget;
+  readonly maxOutputTokens?: number;
 }
 
 export interface OptimizationRun {
@@ -253,6 +262,9 @@ export interface OptimizationRun {
   readonly usedRequests: number;
   readonly usedTokens: number;
   readonly usedCostUsd: number | null;
+  /** Provider-reported cost when available; usedCostUsd remains the preflight reserve. */
+  readonly measuredCostUsd?: number | null;
+  readonly budgetMethod?: "provider_count" | "conservative_byte_envelope";
   readonly status: "running" | "completed" | "budget_exhausted" | "failed";
 }
 

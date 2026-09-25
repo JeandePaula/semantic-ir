@@ -16,7 +16,8 @@
       "enum": [
         "identity",
         "compact_spacing",
-        "tagged"
+        "tagged",
+        "dedupe_context_lines"
       ]
     },
     "aliases": {

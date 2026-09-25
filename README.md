@@ -4,9 +4,9 @@ Camada local para analisar prompts, testar codecs declarativos e encaminhar cham
 
 ## Estado do produto
 
-O MVP executável inclui schema `sir/0.1`, detecção conservadora de dados literais e constraints, Codec DSL sem código dinâmico, adapters OpenAI e OpenRouter, benchmark com orçamento para OpenAI, otimizador evolutivo, profiles SQLite, fallback, servidor MCP, gateway local, CLI e pacotes de plugin para Codex, Claude Code e Google Antigravity.
+O MVP executável inclui schema `sir/0.1`, detecção conservadora de dados literais e constraints, Codec DSL sem código dinâmico, adapters OpenAI e OpenRouter, benchmark com orçamento para os dois providers, otimizador evolutivo, profiles SQLite, fallback, servidor MCP, gateway local, CLI e pacotes de plugin para Codex, Claude Code e Google Antigravity.
 
-O benchmark embutido só pontua quatro tarefas sintéticas de **extração exata**. Outras categorias aparecem como probes sem oracle e não são usadas para promover codecs. Não há economia verificada em um modelo real neste repositório. Um plugin instalado também não tem acesso comprovado ao prompt primário do Codex ou Claude Code antes da inferência; o scope `host_primary_prompt` é `unavailable`. A otimização controlada é de chamadas da aplicação ou downstream.
+As suites embutidas pontuam casos sintéticos de **extração exata**: quatro na suite básica e seis na suite de contexto repetido. Outras categorias aparecem como probes sem oracle e não são usadas para promover codecs. O repositório não inclui resultados de calibração de um modelo real. Um plugin instalado também não tem acesso comprovado ao prompt primário do Codex ou Claude Code antes da inferência; o scope `host_primary_prompt` é `unavailable`. A otimização controlada é de chamadas da aplicação ou downstream.
 
 ## Começar pelo repositório
 
@@ -36,13 +36,47 @@ node apps/cli/bundle/main.js doctor
 node apps/cli/bundle/main.js invoke --allow-spend --max-output-tokens 256 --prompt "Responda apenas OK."
 ```
 
-O último comando envia uma requisição paga para sua conta. Você também pode usar `OPENROUTER_API_KEY` como variável de ambiente. Para OpenAI, troque o provider para `openai`, importe sua chave e escolha um modelo disponível na sua conta. As chaves importadas ficam em `~/.config/semantic-ir/` com permissão `0600`, fora do repositório; não as coloque em arquivos versionados. `doctor` mostra se a chave está configurada, sem imprimi-la. O adapter OpenRouter registra usage e custo reportados pelo provider, mas não oferece calibração automática porque este produto não verifica uma pré-contagem de tokens para ele.
+O último comando envia uma requisição paga para sua conta. Você também pode usar `OPENROUTER_API_KEY` como variável de ambiente. Para OpenAI, troque o provider para `openai`, importe sua chave e escolha um modelo disponível na sua conta. As chaves importadas ficam em `~/.config/semantic-ir/` com permissão `0600`, fora do repositório; não as coloque em arquivos versionados. `doctor` mostra se a chave está configurada, sem imprimi-la. O adapter OpenRouter registra os tokens e o custo medidos pelo provider.
+
+## Calibrar e medir uma otimização real
+
+O OpenRouter pode avaliar candidatos sem uma pré-contagem oficial: antes de cada chamada, o Semantic IR reserva um teto **conservador e estimado** a partir do tamanho em bytes, limite de saída e preço consultado no catálogo do OpenRouter. A requisição também limita o preço por token do provider. Depois de cada resposta, o sistema verifica tokens e custo efetivamente cobrados e interrompe a execução se o teto estimado for ultrapassado. **O limite local em USD não é uma garantia absoluta de cobrança**; para um teto externo, configure um limite de gasto na chave OpenRouter.
+
+Uma suite fechada de extração com contexto repetido permite comparar o prompt original a um codec que remove apenas linhas idênticas do bloco `CONTEXT`/`CONTEXTO`. Execute somente se aceitar as chamadas pagas:
+
+```sh
+semantic-ir calibrate --model z-ai/glm-5.3-flash --task extraction \
+  --suite redundant-extraction --allow-spend \
+  --max-requests 36 --max-tokens 60000 --max-cost-usd 0.05 \
+  --max-duration-ms 900000 --max-output-tokens 256
+semantic-ir calibration report
+semantic-ir profile
+```
+
+O relatório separa custo medido, reserva de orçamento e economia observada **somente nos casos holdout**. Um codec só é promovido se o original e o candidato acertarem todas as respostas exatas e o candidato custar menos em cada caso de calibração, validação e holdout. Se `promoted` for `false`, o runtime continua usando o prompt original. Mesmo quando promovido, a evidência não implica economia em outros tipos de tarefa. Para sua aplicação, forneça uma suite JSON própria com casos e respostas esperadas em cada split, usando `--suite arquivo.json`.
+
+Se `promoted` for `true`, experimente uma entrada nova da mesma classe. Esta chamada também é paga; `decision.mode` deve ser `compiled` e a resposta deve ser `MAGENTA`:
+
+```sh
+PROMPT='Extract the launch label color from CONTEXT. Reply with the uppercase color word and no other text.
+CONTEXT:
+The launch label color is MAGENTA and the same label is used in every approved view.
+The launch label color is MAGENTA and the same label is used in every approved view.
+The launch label color is MAGENTA and the same label is used in every approved view.
+The launch label color is MAGENTA and the same label is used in every approved view.
+The launch label color is MAGENTA and the same label is used in every approved view.
+QUESTION:
+What is the launch label color?'
+semantic-ir invoke --allow-spend --max-output-tokens 256 --prompt "$PROMPT"
+```
+
+O perfil da calibração é específico para `extraction` e para o fingerprint do modelo. Um pedido como “Responda apenas OK.” pode continuar em modo `original` por pertencer a outra classe.
 
 ## Instalar a CLI e os plugins
 
 ```sh
 npm pack --workspace apps/cli
-npm install -g ./semantic-ir-cli-0.2.0.tgz
+npm install -g ./semantic-ir-cli-0.3.0.tgz
 semantic-ir doctor
 semantic-ir integrations build --out ./dist
 semantic-ir install codex

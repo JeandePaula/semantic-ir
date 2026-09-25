@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { analyzePrompt, TaskClassSchema, type BenchmarkSuite } from "@semantic-ir/core";
 import {
-  compilePrompt, DEFAULT_CODECS, RuntimeRouter, SYNTHETIC_SUITE,
+  compilePrompt, DEFAULT_CODECS, REDUNDANT_EXTRACTION_SUITE, RuntimeRouter, SYNTHETIC_SUITE,
   type OpenAIPrice,
 } from "@semantic-ir/engine";
 import { createGateway } from "./gateway.js";
@@ -97,6 +97,8 @@ function budget() {
 function suite(): BenchmarkSuite {
   const path = option("suite");
   if (!path) return SYNTHETIC_SUITE;
+  if (path === "redundant-extraction") return REDUNDANT_EXTRACTION_SUITE;
+  if (path === "synthetic-exact") return SYNTHETIC_SUITE;
   const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
   return z.object({
     id: z.string(), version: z.string(),
@@ -124,8 +126,9 @@ async function main(): Promise<void> {
         "credentials import --provider openrouter < keyfile", "credentials status",
         "analyze PROMPT", "compile --codec ID PROMPT", "doctor", "profile", "codecs list|inspect",
         "invoke --allow-spend --max-output-tokens N --prompt PROMPT",
-        "calibrate|benchmark|optimize --model MODEL --allow-spend --max-requests N --max-tokens N --max-cost-usd N --max-duration-ms N",
-        "rollback --provider openai --model MODEL --task TASK", "metrics",
+        "calibrate|benchmark|optimize --model MODEL --allow-spend --max-requests N --max-tokens N --max-cost-usd N --max-duration-ms N [--suite redundant-extraction] [--max-output-tokens N]",
+        "calibration report [--model MODEL]", "metrics",
+        "rollback --provider openai|openrouter --model MODEL --task TASK",
         "proxy --port 8787", "mcp", "integrations list|status|doctor|build [--wsl-distro NAME]",
         "install codex|claude|antigravity|generic-mcp", "uninstall codex|claude|antigravity",
       ] });
@@ -226,6 +229,12 @@ async function main(): Promise<void> {
       print({ ...store.metricsSummary(), verifiedSavings: "unavailable" });
       return;
     }
+    if (command === "calibration" && argv[1] === "report") {
+      const selectedModel = model(store);
+      if (!selectedModel) throw new Error("Set --model or run configure");
+      print(store.getLatestCalibrationReport(providerFor(store), selectedModel));
+      return;
+    }
     if (command === "calibrate" || command === "benchmark" || command === "optimize") {
       const selectedModel = model(store);
       if (!selectedModel) throw new Error("Set --model or run configure");
@@ -233,7 +242,9 @@ async function main(): Promise<void> {
       const taskClass = TaskClassSchema.parse(option("task") ?? "extraction");
       const report = await runCalibration({
         store, model: selectedModel, budget: budget(), taskClass,
-        suite: suite(), allowSpend: true, promote: command !== "benchmark",
+        ...(option("suite") ? { suite: suite() } : {}),
+        ...(option("max-output-tokens") ? { maxOutputTokens: positiveInteger("max-output-tokens") } : {}),
+        allowSpend: true, promote: command !== "benchmark",
       });
       print(report);
       return;
