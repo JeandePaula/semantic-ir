@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, existsSync, cpSync, mkdirSync } from "node:fs";
+import { readFileSync, existsSync, cpSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
@@ -126,8 +126,8 @@ async function main(): Promise<void> {
         "invoke --allow-spend --max-output-tokens N --prompt PROMPT",
         "calibrate|benchmark|optimize --model MODEL --allow-spend --max-requests N --max-tokens N --max-cost-usd N --max-duration-ms N",
         "rollback --provider openai --model MODEL --task TASK", "metrics",
-        "proxy --port 8787", "mcp", "integrations list|status|doctor|build",
-        "install codex|claude|generic-mcp", "uninstall codex|claude",
+        "proxy --port 8787", "mcp", "integrations list|status|doctor|build [--wsl-distro NAME]",
+        "install codex|claude|antigravity|generic-mcp", "uninstall codex|claude|antigravity",
       ] });
       return;
     }
@@ -188,6 +188,7 @@ async function main(): Promise<void> {
         model: model(store) || null,
         codexPackage: existsSync(join(integrationsDir, "codex", "plugins", "semantic-ir", "plugin.json")),
         claudePackage: existsSync(join(integrationsDir, "claude-code", "plugins", "semantic-ir", ".claude-plugin", "plugin.json")),
+        antigravityPackage: existsSync(join(integrationsDir, "antigravity", "plugins", "semantic-ir", "plugin.json")),
         hostPrimaryPromptOptimization: "unavailable",
       });
       return;
@@ -257,17 +258,60 @@ async function main(): Promise<void> {
       const host = command === "integrations" ? undefined : argv[1];
       const codexRoot = join(integrationsDir, "codex");
       const claudeRoot = join(integrationsDir, "claude-code");
-      const available = { codex: existsSync(codexRoot), claude: existsSync(claudeRoot) };
+      const antigravityRoot = join(integrationsDir, "antigravity");
+      const available = {
+        codex: existsSync(codexRoot), claude: existsSync(claudeRoot),
+        antigravity: existsSync(antigravityRoot),
+      };
       if (action === "build") {
         const output = resolve(option("out") ?? join(process.cwd(), "dist"));
         if (output === integrationsDir || output.startsWith(integrationsDir + sep)) {
           throw new Error("Integration output cannot be inside package assets");
         }
         mkdirSync(output, { recursive: true });
-        for (const name of ["codex", "claude-code", "generic-mcp"]) {
+        for (const name of ["codex", "claude-code", "antigravity", "generic-mcp"]) {
           cpSync(join(integrationsDir, name), join(output, name), { recursive: true, force: true });
         }
-        print({ output, hosts: ["codex", "claude-code", "generic-mcp"] });
+        const wslDistro = option("wsl-distro");
+        if (wslDistro) {
+          if (process.platform !== "linux" || !/^[A-Za-z0-9_.-]+$/.test(wslDistro)) {
+            throw new Error("--wsl-distro requires Linux/WSL and a valid distro name");
+          }
+          const wslArgs = ["--distribution", wslDistro, "--exec", process.execPath,
+            fileURLToPath(import.meta.url), "mcp"];
+          const codexWslRoot = join(output, "codex-wsl");
+          cpSync(join(output, "codex"), codexWslRoot, { recursive: true, force: true });
+          writeFileSync(join(codexWslRoot, "plugins", "semantic-ir", "mcp.json"), JSON.stringify({
+            $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+            mcpServers: { "semantic-ir": {
+              type: "stdio", command: "wsl.exe", args: wslArgs,
+            } },
+          }, null, 2) + "\n");
+          writeFileSync(join(codexWslRoot, ".agents", "plugins", "marketplace.json"), JSON.stringify({
+            name: "semantic-ir-wsl", interface: { displayName: "Semantic IR WSL" },
+            plugins: [{ name: "semantic-ir",
+              source: { source: "local", path: "./plugins/semantic-ir" },
+              policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+              category: "Productivity" }],
+          }, null, 2) + "\n");
+          const claudeWslRoot = join(output, "claude-code-wsl");
+          cpSync(join(output, "claude-code"), claudeWslRoot, { recursive: true, force: true });
+          writeFileSync(join(claudeWslRoot, "plugins", "semantic-ir", ".mcp.json"), JSON.stringify({
+            mcpServers: { "semantic-ir": { command: "wsl.exe", args: wslArgs } },
+          }, null, 2) + "\n");
+          writeFileSync(join(claudeWslRoot, ".claude-plugin", "marketplace.json"), JSON.stringify({
+            name: "semantic-ir-wsl", owner: { name: "Semantic IR contributors" },
+            plugins: [{ name: "semantic-ir", source: "./plugins/semantic-ir",
+              description: "Semantic prompt analysis and controlled downstream optimization." }],
+          }, null, 2) + "\n");
+          const antigravityWslRoot = join(output, "antigravity-wsl");
+          cpSync(join(output, "antigravity"), antigravityWslRoot, { recursive: true, force: true });
+          writeFileSync(join(antigravityWslRoot, "plugins", "semantic-ir", "mcp_config.json"), JSON.stringify({
+            mcpServers: { "semantic-ir": { command: "wsl.exe", args: wslArgs } },
+          }, null, 2) + "\n");
+        }
+        print({ output, hosts: ["codex", "claude-code", "antigravity", "generic-mcp",
+          ...(wslDistro ? ["codex-wsl", "claude-code-wsl", "antigravity-wsl"] : [])] });
         return;
       }
       if (action === "list" || action === "status" || action === "doctor") {
@@ -293,6 +337,14 @@ async function main(): Promise<void> {
         ] });
         return;
       }
+      if (action === "install" && host === "antigravity") {
+        print({ installed: false, packageRoot: antigravityRoot, steps: [
+          "Install @semantic-ir/cli globally in the same environment as Antigravity",
+          "agy plugin install " + join(antigravityRoot, "plugins", "semantic-ir"),
+          "For the IDE, copy that plugin directory to ~/.gemini/config/plugins/semantic-ir",
+        ] });
+        return;
+      }
       if (action === "install" && host === "generic-mcp") {
         print({ installed: false, command: "semantic-ir", args: ["mcp"], transport: "stdio" });
         return;
@@ -304,6 +356,10 @@ async function main(): Promise<void> {
       if (action === "uninstall" && host === "codex") {
         print({ uninstalled: false, steps: ["codex plugin remove semantic-ir@semantic-ir-local",
           "codex plugin marketplace remove semantic-ir-local"] });
+        return;
+      }
+      if (action === "uninstall" && host === "antigravity") {
+        print({ uninstalled: false, steps: ["agy plugin uninstall semantic-ir"] });
         return;
       }
       throw new Error("Unsupported integration command");

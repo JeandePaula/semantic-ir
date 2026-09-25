@@ -10,7 +10,7 @@ O fluxo controlado é `texto → SemanticIR → codec por modelo/tarefa → prov
 | `packages/core` | API de análise, contratos e seleção de estratégia por scope/capacidade. |
 | `packages/engine` | Codec DSL, OpenAI adapter, benchmark, evaluator exato, otimizador, profiles SQLite e runtime. |
 | `apps/cli` | CLI, MCP stdio, gateway local, dashboard mínimo e matriz de hosts. |
-| `integrations/` | Somente manifests e skills específicos de Codex, Claude Code e MCP genérico. |
+| `integrations/` | Somente manifests e skills específicos de Codex, Claude Code, Antigravity e MCP genérico. |
 
 O `CodecDefinition` é JSON declarativo validado por Zod; não executa código, shell ou expressões. Os codecs atuais preservam o texto original ou fazem mudanças pequenas de formatação/metadata. Antes de enviar uma versão compilada, o compilador verifica o checksum da fonte, presença e multiplicidade de literais e constraints explícitas. Esses checks são necessários, mas não provam equivalência semântica universal.
 
@@ -22,6 +22,6 @@ Os profiles estáveis ficam em SQLite, associados ao fingerprint de provider/mod
 
 O adapter OpenAI usa Responses para o caminho de texto simples e `responses/input_tokens` para pré-contagem. O adapter OpenRouter usa Chat Completions e usage/custo retornados pelo provider; sem pré-contagem verificada, calibração automática é recusada antes de chamadas pagas. O gateway em `127.0.0.1` aceita uma forma restrita de Chat Completions; recursos não suportados são encaminhados sem compilação. MCP e plugins usam o mesmo engine. O dashboard mostra contagens locais e `verified savings: unavailable` até existir comparação confiável de produção. Chamadas ao provider exigem credencial própria via variável de ambiente ou arquivo privado; o produto não tenta usar credenciais internas de agentes.
 
-`safe` retorna texto normal; `structured` tenta parse local de JSON; `agent` retorna um novo IR da resposta. `SemanticState` e `SemanticDelta` são protótipos locais, sem estado distribuído. Anthropic, Gemini, OpenRouter, modelos locais, streaming transformado, cobrança SaaS e otimização do prompt primário dos agentes permanecem extensões futuras.
+`safe` retorna texto normal; `structured` tenta parse local de JSON; `agent` retorna um novo IR da resposta. `SemanticState` e `SemanticDelta` são protótipos locais, sem estado distribuído. Anthropic e Gemini como providers diretos, modelos locais, streaming transformado, cobrança SaaS e otimização do prompt primário dos agentes permanecem extensões futuras.
 
 As interfaces e o modelo de persistência estão em [data-model.md](data-model.md). Os limites dos hosts e fontes oficiais estão em [ADR 0002](decisions/0002-host-integrations.md).

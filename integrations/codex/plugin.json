@@ -1,8 +1,11 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "semantic-ir",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Inspect and benchmark semantic prompt compilation with explicit cost controls.",
+  "author": { "name": "Jean de Paula" },
+  "repository": "https://github.com/JeandePaula/semantic-ir",
+  "license": "MIT",
   "extensions": {
     "com.openai": {
       "interface": {

@@ -3,9 +3,9 @@ import type { AgentHostCapabilities, OptimizationScope } from "@semantic-ir/core
 import { selectIntegrationStrategy } from "@semantic-ir/core";
 
 /** Conservative capabilities from the documented plugin surfaces, revision 1. */
-export const CAPABILITY_MATRIX_REVISION = "2026-09-25.1";
+export const CAPABILITY_MATRIX_REVISION = "2026-09-25.2";
 
-const hostCapabilities: Record<"codex" | "claude-code" | "generic-mcp", AgentHostCapabilities> = {
+const hostCapabilities: Record<"codex" | "claude-code" | "antigravity" | "generic-mcp", AgentHostCapabilities> = {
   codex: {
     host: "codex", hostVersion: null, skills: true, mcp: true, hooks: false,
     promptPreprocessing: false, promptReplacement: false, toolInterception: false,
@@ -15,6 +15,11 @@ const hostCapabilities: Record<"codex" | "claude-code" | "generic-mcp", AgentHos
     host: "claude-code", hostVersion: null, skills: true, mcp: true, hooks: true,
     promptPreprocessing: false, promptReplacement: false, toolInterception: false,
     installScope: ["local"],
+  },
+  antigravity: {
+    host: "antigravity", hostVersion: null, skills: true, mcp: true, hooks: true,
+    promptPreprocessing: false, promptReplacement: false, toolInterception: false,
+    installScope: ["user", "project"],
   },
   "generic-mcp": {
     host: "generic-mcp", hostVersion: null, skills: false, mcp: true, hooks: false,
@@ -41,16 +46,18 @@ function detectVersion(commands: readonly string[]): string | null {
   return null;
 }
 
-export function integrationReport(packages: { codex: boolean; claude: boolean }) {
+export function integrationReport(packages: { codex: boolean; claude: boolean; antigravity?: boolean }) {
   const hostVersions = {
     codex: detectVersion(["codex", "codex.exe"]),
     "claude-code": detectVersion(["claude", "claude.exe"]),
+    antigravity: detectVersion(["agy", "agy.exe"]),
     "generic-mcp": null,
   };
   return (Object.keys(hostCapabilities) as (keyof typeof hostCapabilities)[]).map((host) => {
     const capabilities = { ...hostCapabilities[host], hostVersion: hostVersions[host] };
     const packageAvailable = host === "codex" ? packages.codex :
-      host === "claude-code" ? packages.claude : true;
+      host === "claude-code" ? packages.claude :
+        host === "antigravity" ? Boolean(packages.antigravity) : true;
     return {
       host, matrixRevision: CAPABILITY_MATRIX_REVISION,
       hostDetected: host === "generic-mcp" ? null : hostVersions[host] !== null,

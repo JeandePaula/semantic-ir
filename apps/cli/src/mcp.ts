@@ -12,7 +12,7 @@ const result = (value: unknown) => ({
 
 export async function startMcpServer(): Promise<void> {
   const store = openStore();
-  const server = new McpServer({ name: "semantic-ir", version: "0.1.0" });
+  const server = new McpServer({ name: "semantic-ir", version: "0.2.0" });
   server.registerTool("analyze_prompt", {
     description: "Return a source-preserving Semantic IR with partial annotations. No provider call.",
     inputSchema: { prompt: z.string().min(1) },
@@ -87,6 +87,31 @@ export async function startMcpServer(): Promise<void> {
     hostPrimaryPromptOptimization: "unavailable",
     controlledScopes: ["application_request", "downstream_llm_call"],
   }));
+
+  server.registerTool("invoke_prompt", {
+    description: "PAID: send one controlled downstream prompt to the configured provider and report the real response, usage, cost, and routing decision. Requires explicit spending consent.",
+    inputSchema: {
+      prompt: z.string().min(1).max(20_000),
+      model: z.string().min(1).optional(),
+      allowSpend: z.literal(true),
+      maxOutputTokens: z.number().int().positive(),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+  }, async ({ prompt, model, maxOutputTokens }) => {
+    const selectedModel = model ?? store.getSetting<string>("defaultModel");
+    if (!selectedModel) throw new Error("Configure a model first with semantic-ir configure");
+    const adapter = adapterFor(store, selectedModel);
+    const routed = await new RuntimeRouter(adapter, store).invoke(prompt, {
+      scope: "downstream_llm_call", maxOutputTokens,
+    });
+    return result({
+      provider: providerFor(store), model: selectedModel,
+      response: routed.response.text, usage: routed.response.usage,
+      latencyMs: routed.response.latencyMs,
+      cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
+      decision: routed.decision,
+    });
+  });
 
   server.registerTool("calibrate_model", {
     description: "PAID: calls the configured provider. Requires allowSpend=true and explicit hard budget.",

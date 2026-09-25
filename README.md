@@ -4,7 +4,7 @@ Camada local para analisar prompts, testar codecs declarativos e encaminhar cham
 
 ## Estado do produto
 
-O MVP executável inclui schema `sir/0.1`, detecção conservadora de dados literais e constraints, Codec DSL sem código dinâmico, adapters OpenAI e OpenRouter, benchmark com orçamento para OpenAI, otimizador evolutivo, profiles SQLite, fallback, servidor MCP, gateway local, CLI e pacotes de plugin para Codex e Claude Code.
+O MVP executável inclui schema `sir/0.1`, detecção conservadora de dados literais e constraints, Codec DSL sem código dinâmico, adapters OpenAI e OpenRouter, benchmark com orçamento para OpenAI, otimizador evolutivo, profiles SQLite, fallback, servidor MCP, gateway local, CLI e pacotes de plugin para Codex, Claude Code e Google Antigravity.
 
 O benchmark embutido só pontua quatro tarefas sintéticas de **extração exata**. Outras categorias aparecem como probes sem oracle e não são usadas para promover codecs. Não há economia verificada em um modelo real neste repositório. Um plugin instalado também não tem acesso comprovado ao prompt primário do Codex ou Claude Code antes da inferência; o scope `host_primary_prompt` é `unavailable`. A otimização controlada é de chamadas da aplicação ou downstream.
 
@@ -17,14 +17,13 @@ git clone https://github.com/JeandePaula/semantic-ir.git
 cd semantic-ir
 npm ci
 npm run build
-npm run check
 node apps/cli/bundle/main.js init
 node apps/cli/bundle/main.js doctor
 node apps/cli/bundle/main.js integrations status
 node apps/cli/bundle/main.js analyze "Nunca altere 7500 nem /api/v1/users/{id}."
 ```
 
-Os testes usam providers simulados e não gastam créditos. `npm run check` roda typecheck, lint e Vitest. `npm run build` gera JSON Schemas, bundle da CLI e pacotes em `apps/cli/assets/integrations/`.
+`npm run build` gera JSON Schemas, bundle da CLI e pacotes em `apps/cli/assets/integrations/`. Para confirmar a integração com um modelo de verdade, siga a seção de chave de API e faça a chamada real abaixo.
 
 ## Testar com sua própria chave de API
 
@@ -43,14 +42,19 @@ O último comando envia uma requisição paga para sua conta. Você também pode
 
 ```sh
 npm pack --workspace apps/cli
-npm install -g ./semantic-ir-cli-0.1.0.tgz
+npm install -g ./semantic-ir-cli-0.2.0.tgz
 semantic-ir doctor
 semantic-ir integrations build --out ./dist
 semantic-ir install codex
 semantic-ir install claude
+semantic-ir install antigravity
 ```
 
-Os dois últimos comandos mostram os passos de instalação em cada host; siga o comando impresso para instalar o plugin. Veja [instruções para Codex, Claude Code e clientes MCP](docs/integrations.md). A CLI precisa estar no `PATH` do mesmo ambiente em que o host executa o MCP. Os profiles ficam em `~/.semantic-ir/semantic-ir.sqlite`, ou no caminho definido por `SEMANTIC_IR_DB`, e sobrevivem a atualizações do plugin.
+Os três comandos `install` mostram os passos de instalação em cada host; siga o comando impresso para instalar o plugin. Veja o [passo a passo para Codex, Claude Code, Antigravity, WSL e ChatGPT](docs/integrations.md). A CLI precisa estar no `PATH` do mesmo ambiente em que o host executa o MCP. Se o host roda no Windows e a CLI/chave ficam no WSL, gere os pacotes de ponte com `node apps/cli/bundle/main.js integrations build --out /mnt/c/Users/SEU_USUARIO/.codex/semantic-ir-wsl --wsl-distro Ubuntu-24.04`. Os profiles ficam em `~/.semantic-ir/semantic-ir.sqlite`, ou no caminho definido por `SEMANTIC_IR_DB`, e sobrevivem a atualizações do plugin.
+
+## Verificar o plugin com uma chamada real
+
+Depois de configurar sua própria chave do OpenRouter e instalar o plugin, abra **uma nova sessão** no host e peça: “Use Semantic IR `doctor` e depois `invoke_prompt` com `allowSpend: true`, `maxOutputTokens: 32` e o prompt `Responda apenas OK.`. Mostre a resposta, o custo e `decision.mode`.” Isso chama o modelo `z-ai/glm-5.3-flash` configurado acima. Se `decision.mode` for `original` e `fallbackReason` for `no_stable_profile`, o plugin funcionou, mas ainda não há otimização comprovada para esse modelo. A instalação não troca automaticamente o modelo principal do agente pelo OpenRouter.
 
 ## Gateway local
 
