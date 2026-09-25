@@ -86,7 +86,7 @@ export class RuntimeRouter {
       };
       response = await this.adapter.invoke(makeRequest(prompt));
     }
-    const cost = this.adapter.estimateCost?.(response.usage) ?? null;
+    const cost = response.cost ?? this.adapter.estimateCost?.(response.usage) ?? null;
     this.store.recordMetric({
       requestId: randomUUID(), scope: options.scope ?? "application_request",
       model: fingerprint.model, taskClass: decision.taskClass,

@@ -1,11 +1,47 @@
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import type { BenchmarkSuite, CalibrationBudget, TaskClass } from "@semantic-ir/core";
 import {
   DEFAULT_CODECS, EvolutionaryOptimizer, OpenAIAdapter,
   SqliteStore, SYNTHETIC_SUITE, type OpenAIPrice,
   type OptimizationReport,
 } from "@semantic-ir/engine";
+
+export type ProviderId = "openai" | "openrouter";
+
+export function providerFor(store: SqliteStore): ProviderId {
+  return store.getSetting<ProviderId>("defaultProvider") === "openrouter" ? "openrouter" : "openai";
+}
+
+export function credentialPath(provider: ProviderId): string {
+  const variable = provider === "openrouter" ? "OPENROUTER_API_KEY_FILE" : "OPENAI_API_KEY_FILE";
+  return process.env[variable] ?? join(homedir(), ".config", "semantic-ir", provider + ".key");
+}
+
+export function saveProviderKey(provider: ProviderId, key: string): string {
+  if (!key || key.length > 4096 || /[\r\n]/.test(key)) throw new Error("Invalid API key input");
+  const path = credentialPath(provider);
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  writeFileSync(path, key + "\n", { mode: 0o600 });
+  if (process.platform !== "win32") chmodSync(path, 0o600);
+  return path;
+}
+
+export function providerKey(provider: ProviderId): string {
+  const variable = provider === "openrouter" ? "OPENROUTER_API_KEY" : "OPENAI_API_KEY";
+  if (process.env[variable]) return process.env[variable] ?? "";
+  const path = credentialPath(provider);
+  try {
+    if (process.platform !== "win32" && (statSync(path).mode & 0o077) !== 0) {
+      throw new Error("Credential file permissions must be 0600: " + path);
+    }
+    return readFileSync(path, "utf8").trim();
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return "";
+    throw error;
+  }
+}
 
 export function databasePath(): string {
   return process.env.SEMANTIC_IR_DB ?? join(homedir(), ".semantic-ir", "semantic-ir.sqlite");
@@ -16,7 +52,10 @@ export function openStore(): SqliteStore {
 }
 
 export function adapterFor(store: SqliteStore, model: string): OpenAIAdapter {
-  return new OpenAIAdapter(model, { price: store.getSetting<OpenAIPrice>("price:" + model) });
+  const provider = providerFor(store);
+  const price = store.getSetting<OpenAIPrice>("price:" + provider + ":" + model) ??
+    (provider === "openai" ? store.getSetting<OpenAIPrice>("price:" + model) : null);
+  return new OpenAIAdapter(model, { provider, apiKey: providerKey(provider), price });
 }
 
 export async function runCalibration(options: {
@@ -30,6 +69,9 @@ export async function runCalibration(options: {
 }): Promise<OptimizationReport> {
   if (!options.allowSpend) throw new Error("Calibration requires explicit allowSpend=true");
   const adapter = adapterFor(options.store, options.model);
+  if (!adapter.getCapabilities().tokenCounting) {
+    throw new Error("Calibration unavailable: provider has no verified input token pre-count endpoint");
+  }
   const targetStore = options.promote ? options.store : new SqliteStore(":memory:");
   try {
     const optimizer = new EvolutionaryOptimizer(adapter, targetStore);

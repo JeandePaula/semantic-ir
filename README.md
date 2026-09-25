@@ -4,7 +4,7 @@ Camada local para analisar prompts, testar codecs declarativos e encaminhar cham
 
 ## Estado do produto
 
-O MVP executável inclui schema `sir/0.1`, detecção conservadora de dados literais e constraints, Codec DSL sem código dinâmico, adapter OpenAI, benchmark com orçamento, otimizador evolutivo, profiles SQLite, fallback, servidor MCP, gateway local, CLI e pacotes de plugin para Codex e Claude Code.
+O MVP executável inclui schema `sir/0.1`, detecção conservadora de dados literais e constraints, Codec DSL sem código dinâmico, adapters OpenAI e OpenRouter, benchmark com orçamento para OpenAI, otimizador evolutivo, profiles SQLite, fallback, servidor MCP, gateway local, CLI e pacotes de plugin para Codex e Claude Code.
 
 O benchmark embutido só pontua quatro tarefas sintéticas de **extração exata**. Outras categorias aparecem como probes sem oracle e não são usadas para promover codecs. Não há economia verificada em um modelo real neste repositório. Um plugin instalado também não tem acesso comprovado ao prompt primário do Codex ou Claude Code antes da inferência; o scope `host_primary_prompt` é `unavailable`. A otimização controlada é de chamadas da aplicação ou downstream.
 
@@ -47,6 +47,8 @@ curl http://127.0.0.1:8787/health
 ```
 
 O gateway escuta somente em `127.0.0.1`. Aceita `POST /v1/chat/completions` com um único texto de usuário; recursos Chat Completions não suportados são encaminhados ao provider sem compilação. `GET /metrics` e `/dashboard` mostram contagens observadas e distinguem economia verificada como indisponível. Opcionalmente defina `SEMANTIC_IR_GATEWAY_KEY` para exigir `Authorization: Bearer ...`. O gateway não é um serviço público multiusuário.
+
+Para testar com OpenRouter, configure `semantic-ir configure --provider openrouter --model z-ai/glm-5.3-flash`. Forneça a chave por `OPENROUTER_API_KEY` ou importe-a com `semantic-ir credentials import --provider openrouter`; a entrada interativa é oculta e o arquivo privado fica em `~/.config/semantic-ir/openrouter.key` com permissão `0600`, fora do repositório. Execute `semantic-ir invoke --allow-spend --max-output-tokens 256 --prompt "Responda apenas OK."`. O adapter OpenRouter usa Chat Completions, registra usage e custo reportados pelo provider e não oferece calibração automática porque não há endpoint de pré-contagem verificado neste produto.
 
 ## Calibração paga, opcional
 

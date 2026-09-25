@@ -4,7 +4,7 @@ O plano da especificação v2 foi implementado como um **MVP local verificável*
 
 | Fases da especificação | Estado |
 | --- | --- |
-| 1–3: IR, literals, Codec DSL, OpenAI adapter e usage | Implementado e coberto por testes locais. |
+| 1–3: IR, literals, Codec DSL, OpenAI/OpenRouter adapters e usage | Implementado e coberto por testes locais. Pré-contagem para calibração apenas no adapter OpenAI. |
 | 4–6: benchmark, evaluator e otimizador | Implementado para tarefas sintéticas com oracle exato; tarefas abertas não são pontuadas. |
 | 7–8: orçamento, profiles, runtime, risco e fallback | Implementado. CLI exige consentimento de gasto e limites explícitos. |
 | 9: MCP | Implementado; handshake real testado em processo separado. |

@@ -9,4 +9,4 @@ Start with `doctor` and `get_runtime_decision` when a user asks whether optimiza
 
 Call `calibrate_model` or `benchmark_codec` only after the user explicitly authorizes provider spending and supplies request, token, cost, and duration limits. Never invent savings or quality scores. When evidence is unavailable, report it as unavailable.
 
-For controlled application calls, use the Semantic IR gateway. Keep API keys in the user's environment, outside plugin files and tool outputs.
+For controlled application calls, use the Semantic IR gateway. Keep API keys in the user's environment or the CLI's private credential file, outside plugin files and tool outputs.

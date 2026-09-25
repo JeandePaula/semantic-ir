@@ -16,7 +16,9 @@ Teste manual nos hosts reais antes de uma release: adicione o marketplace, insta
 
 ## Experimento com modelo real
 
-Defina `OPENAI_API_KEY` apenas no ambiente do processo. Configure um modelo e **os preços vigentes da sua conta** em USD por milhão de tokens. Execute `semantic-ir benchmark --task extraction --allow-spend` com `--max-requests`, `--max-tokens`, `--max-cost-usd` e `--max-duration-ms`. Revise baseline, candidato e resultado por split. Só então use `semantic-ir calibrate` para permitir promoção estável. O comando retorna falha sem casos com oracle nos três splits. O custo mostrado usa usage de provider e tabela de preços configurada pelo usuário; é estimado, não uma fatura oficial. O orçamento em USD depende da correção dessa tabela.
+Para calibração OpenAI, defina `OPENAI_API_KEY` apenas no ambiente do processo. Configure um modelo e **os preços vigentes da sua conta** em USD por milhão de tokens. Execute `semantic-ir benchmark --task extraction --allow-spend` com `--max-requests`, `--max-tokens`, `--max-cost-usd` e `--max-duration-ms`. Revise baseline, candidato e resultado por split. Só então use `semantic-ir calibrate` para permitir promoção estável. O comando retorna falha sem casos com oracle nos três splits. O custo calculado usa usage do provider e tabela de preços configurada pelo usuário; é estimado, não uma fatura oficial. O orçamento em USD depende da correção dessa tabela.
+
+Para uma chamada simples no OpenRouter, use `semantic-ir configure --provider openrouter --model z-ai/glm-5.3-flash`, importe a chave com `semantic-ir credentials import --provider openrouter` e rode `semantic-ir invoke --allow-spend --max-output-tokens 256 --prompt "Responda apenas OK."`. O resultado identifica usage e custo medido se o provider os fornecer. Calibração automática no OpenRouter está indisponível sem pré-contagem confiável.
 
 ## Tornar disponível à comunidade
 

@@ -25,25 +25,44 @@ interface ResponseJson {
   };
 }
 
+interface ChatResponseJson {
+  id?: string;
+  model?: string;
+  choices?: Array<{ message?: { content?: string | null } }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+    cost?: number;
+    prompt_tokens_details?: { cached_tokens?: number };
+    completion_tokens_details?: { reasoning_tokens?: number };
+  };
+}
+
 export class OpenAIAdapter implements ModelAdapter {
   private resolvedModel: string;
   private readonly baseUrl: string;
   private readonly apiKey: string;
   private readonly price: OpenAIPrice | null;
+  readonly provider: "openai" | "openrouter";
 
   constructor(readonly model: string, options: {
     apiKey?: string;
     baseUrl?: string;
     price?: OpenAIPrice | null;
+    provider?: "openai" | "openrouter";
   } = {}) {
-    this.apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? "";
-    this.baseUrl = (options.baseUrl ?? "https://api.openai.com").replace(/\/$/, "");
+    this.provider = options.provider ?? "openai";
+    this.apiKey = options.apiKey ?? (this.provider === "openrouter"
+      ? process.env.OPENROUTER_API_KEY : process.env.OPENAI_API_KEY) ?? "";
+    this.baseUrl = (options.baseUrl ?? (this.provider === "openrouter"
+      ? "https://openrouter.ai/api" : "https://api.openai.com")).replace(/\/$/, "");
     this.price = options.price ?? null;
     this.resolvedModel = model;
   }
 
   private async request(path: string, body: object, timeoutMs = 60_000): Promise<Response> {
-    if (!this.apiKey) throw new Error("OPENAI_API_KEY is required for provider calls");
+    if (!this.apiKey) throw new Error(this.provider.toUpperCase() + " API key is required for provider calls");
     const response = await fetch(this.baseUrl + path, {
       method: "POST",
       headers: { authorization: "Bearer " + this.apiKey, "content-type": "application/json" },
@@ -52,13 +71,13 @@ export class OpenAIAdapter implements ModelAdapter {
     });
     if (!response.ok) {
       // Do not include provider response bodies: they may contain request content.
-      throw new Error("OpenAI request failed with HTTP " + response.status);
+      throw new Error(this.provider + " request failed with HTTP " + response.status);
     }
     return response;
   }
 
   async forwardChatRaw(body: object): Promise<Response> {
-    if (!this.apiKey) throw new Error("OPENAI_API_KEY is required for provider calls");
+    if (!this.apiKey) throw new Error(this.provider.toUpperCase() + " API key is required for provider calls");
     return fetch(this.baseUrl + "/v1/chat/completions", {
       method: "POST",
       headers: { authorization: "Bearer " + this.apiKey, "content-type": "application/json" },
@@ -74,6 +93,36 @@ export class OpenAIAdapter implements ModelAdapter {
 
   async invoke(request: ModelRequest): Promise<ModelResponse> {
     const start = performance.now();
+    if (this.provider === "openrouter") {
+      const response = await this.request("/v1/chat/completions", {
+        model: request.model,
+        messages: [{ role: "user", content: request.prompt }],
+        usage: { include: true },
+        ...(request.maxOutputTokens === undefined ? {} : { max_tokens: request.maxOutputTokens }),
+      }, request.timeoutMs);
+      const body = await response.json() as ChatResponseJson;
+      const content = body.choices?.[0]?.message?.content;
+      if (typeof content !== "string") throw new Error("openrouter response did not contain text");
+      this.resolvedModel = body.model ?? this.resolvedModel;
+      const usage = body.usage;
+      return {
+        text: content,
+        usage: {
+          inputTokens: usage?.prompt_tokens ?? null,
+          cachedInputTokens: usage?.prompt_tokens_details?.cached_tokens ?? null,
+          outputTokens: usage?.completion_tokens ?? null,
+          reasoningTokens: usage?.completion_tokens_details?.reasoning_tokens ?? null,
+          totalTokens: usage?.total_tokens ?? null,
+          source: usage ? "provider_usage" : "unavailable",
+        },
+        ...(typeof usage?.cost === "number" && Number.isFinite(usage.cost) && usage.cost >= 0
+          ? { cost: { amountUsd: usage.cost, status: "measured" as const,
+              priceVersion: null, category: "user_inference" as const } } : {}),
+        latencyMs: Math.round(performance.now() - start),
+        providerRequestId: body.id ?? null,
+        modelFingerprint: await this.getModelFingerprint(),
+      };
+    }
     const response = await this.request("/v1/responses", {
       model: request.model,
       input: request.prompt,
@@ -105,6 +154,7 @@ export class OpenAIAdapter implements ModelAdapter {
   }
 
   async countTokens(request: ModelRequest): Promise<TokenCount | null> {
+    if (this.provider === "openrouter") return null;
     try {
       const response = await this.request("/v1/responses/input_tokens", {
         model: request.model, input: request.prompt,
@@ -132,7 +182,7 @@ export class OpenAIAdapter implements ModelAdapter {
 
   getCapabilities(): ModelCapabilities {
     return {
-      tokenCounting: true, reasoningMetadata: true, structuredOutput: false,
+      tokenCounting: this.provider === "openai", reasoningMetadata: true, structuredOutput: false,
       tools: false, streaming: false, contextSize: null, tokenizerId: null,
     };
   }
@@ -140,9 +190,9 @@ export class OpenAIAdapter implements ModelAdapter {
   async getModelFingerprint(): Promise<ModelFingerprint> {
     const capabilities = this.getCapabilities();
     return {
-      provider: "openai", model: this.model, snapshot: this.resolvedModel,
+      provider: this.provider, model: this.model, snapshot: this.resolvedModel,
       capabilities, fingerprintSha256: sha256(JSON.stringify({
-        provider: "openai", model: this.model, snapshot: this.resolvedModel, capabilities,
+        provider: this.provider, model: this.model, snapshot: this.resolvedModel, capabilities,
       })),
       observedAt: new Date().toISOString(),
     };

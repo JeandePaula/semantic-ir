@@ -4,7 +4,7 @@ import { z } from "zod";
 import { analyzePrompt, sha256 } from "@semantic-ir/core";
 import type { TaskClass } from "@semantic-ir/core";
 import { compilePrompt, DEFAULT_CODECS, RuntimeRouter, validateCompiled } from "@semantic-ir/engine";
-import { adapterFor, openStore, runCalibration } from "./service.js";
+import { adapterFor, openStore, providerFor, providerKey, runCalibration } from "./service.js";
 
 const result = (value: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(value) }],
@@ -56,7 +56,7 @@ export async function startMcpServer(): Promise<void> {
     result(store.getProfile(provider, model, taskClass as TaskClass)));
 
   server.registerTool("get_metrics", {
-    description: "Return measured request counts and fallback counts by optimization scope. No savings are inferred.",
+    description: "Return request counts, fallbacks, and separately labeled measured/estimated costs. No savings are inferred.",
     annotations: { readOnlyHint: true },
   }, () => result(store.metricsSummary()));
 
@@ -82,7 +82,8 @@ export async function startMcpServer(): Promise<void> {
     description: "Check local Semantic IR configuration without revealing credentials.",
     annotations: { readOnlyHint: true },
   }, () => result({
-    databaseReady: true, providerKeyConfigured: Boolean(process.env.OPENAI_API_KEY),
+    databaseReady: true, provider: providerFor(store),
+    providerKeyConfigured: Boolean(providerKey(providerFor(store))),
     hostPrimaryPromptOptimization: "unavailable",
     controlledScopes: ["application_request", "downstream_llm_call"],
   }));

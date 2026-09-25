@@ -177,6 +177,7 @@ export class SqliteStore {
 
   metricsSummary(): {
     requests: number; fallbacks: number; byScope: Array<{ scope: string; requests: number }>;
+    measuredCostUsd: number | null; estimatedCostUsd: number | null;
   } {
     const totals = this.db.prepare(`
       SELECT COUNT(*) AS requests, SUM(CASE WHEN fallback_reason IS NOT NULL THEN 1 ELSE 0 END) AS fallbacks FROM metrics
@@ -184,7 +185,16 @@ export class SqliteStore {
     const byScope = this.db.prepare(`
       SELECT scope, COUNT(*) AS requests FROM metrics GROUP BY scope ORDER BY scope
     `).all() as Array<{ scope: string; requests: number }>;
-    return { requests: totals.requests, fallbacks: totals.fallbacks ?? 0, byScope };
+    const costs = this.db.prepare(`
+      SELECT
+        SUM(CASE WHEN json_extract(cost_json,'$.status')='measured'
+          THEN CAST(json_extract(cost_json,'$.amountUsd') AS REAL) END) AS measured,
+        SUM(CASE WHEN json_extract(cost_json,'$.status')='estimated'
+          THEN CAST(json_extract(cost_json,'$.amountUsd') AS REAL) END) AS estimated
+      FROM metrics
+    `).get() as { measured: number | null; estimated: number | null };
+    return { requests: totals.requests, fallbacks: totals.fallbacks ?? 0, byScope,
+      measuredCostUsd: costs.measured, estimatedCostUsd: costs.estimated };
   }
 
   setSetting(key: string, value: unknown): void {

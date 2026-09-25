@@ -131,6 +131,7 @@ export interface CostMetrics {
 export interface ModelResponse {
   readonly text: string;
   readonly usage: UsageMetrics;
+  readonly cost?: CostMetrics;
   readonly latencyMs: number;
   readonly providerRequestId: string | null;
   readonly modelFingerprint: ModelFingerprint;

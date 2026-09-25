@@ -78,6 +78,7 @@ describe("engine", () => {
     expect(routed.decision.mode).toBe("compiled");
     expect(adapter.calls.at(-1)).toBe("Extract the number 8500.");
     expect(store.metricsSummary().byScope).toEqual([{ scope: "application_request", requests: 1 }]);
+    expect(store.metricsSummary().estimatedCostUsd).toBeGreaterThan(0);
     adapter.snapshot = "fake-2";
     expect((await router.decide(prompt)).decision.fallbackReason).toBe("model_fingerprint_changed");
     expect(store.getProfile("fake", "test", "extraction")?.status).toBe("needs_reverification");
@@ -184,6 +185,26 @@ describe("engine", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("reports provider-measured cost separately from configured-price estimates", () => {
+    const store = new SqliteStore(":memory:");
+    const usage: UsageMetrics = {
+      inputTokens: 10, cachedInputTokens: 0, outputTokens: 5,
+      reasoningTokens: null, totalTokens: 15, source: "provider_usage",
+    };
+    store.recordMetric({ requestId: "measured", scope: "application_request",
+      model: "test", taskClass: "extraction", codecId: null, fallbackReason: null,
+      usage, cost: { amountUsd: 0.02, status: "measured", priceVersion: null,
+        category: "user_inference" }, latencyMs: 10 });
+    store.recordMetric({ requestId: "estimated", scope: "application_request",
+      model: "test", taskClass: "extraction", codecId: null, fallbackReason: null,
+      usage, cost: { amountUsd: 0.03, status: "estimated", priceVersion: "fixture",
+        category: "user_inference" }, latencyMs: 10 });
+    expect(store.metricsSummary()).toMatchObject({
+      measuredCostUsd: 0.02, estimatedCostUsd: 0.03,
+    });
+    store.close();
+  });
 });
 
 describe("OpenAI adapter response accounting", () => {
@@ -204,5 +225,34 @@ describe("OpenAI adapter response accounting", () => {
       outputTokens: 50, reasoningTokens: 30, totalTokens: 150 });
     expect(adapter.estimateCost(response.usage)?.amountUsd).toBe(0.00019);
     expect(adapter.estimateCost(response.usage)?.status).toBe("estimated");
+  });
+
+  it("uses OpenRouter chat completions without claiming a token count endpoint", async () => {
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url, body: JSON.parse(String(init.body)) as Record<string, unknown> });
+      return new Response(JSON.stringify({
+        id: "chat_1", model: "z-ai/glm-5.3-flash",
+        choices: [{ message: { content: "OK" } }],
+        usage: { prompt_tokens: 12, completion_tokens: 3, total_tokens: 15, cost: 0.00002 },
+      }), { status: 200 });
+    }));
+    const adapter = new OpenAIAdapter("z-ai/glm-5.3-flash", {
+      provider: "openrouter", apiKey: "fixture",
+    });
+    const response = await adapter.invoke({
+      model: "z-ai/glm-5.3-flash", prompt: "Say OK", mode: "safe", maxOutputTokens: 32,
+    });
+    expect(calls).toEqual([{
+      url: "https://openrouter.ai/api/v1/chat/completions",
+      body: { model: "z-ai/glm-5.3-flash", messages: [{ role: "user", content: "Say OK" }],
+        usage: { include: true }, max_tokens: 32 },
+    }]);
+    expect(response.text).toBe("OK");
+    expect(response.usage.inputTokens).toBe(12);
+    expect(response.cost).toMatchObject({ amountUsd: 0.00002, status: "measured" });
+    expect((await adapter.getModelFingerprint()).provider).toBe("openrouter");
+    expect(await adapter.countTokens({ model: "z-ai/glm-5.3-flash", prompt: "x", mode: "safe" }))
+      .toBeNull();
   });
 });

@@ -10,7 +10,7 @@ O MVP usa `node:sqlite` no arquivo `~/.semantic-ir/semantic-ir.sqlite`, substitu
 | `metrics` | Request ID, optimization scope, modelo, tarefa, codec, fallback, usage, custo estimado e latência. |
 | `settings` | Modelo padrão e tabela de preço fornecida pelo usuário. |
 
-`usage_json` tem input, cached input, output, reasoning e total, cada um nullable, mais a origem. Cached input é subconjunto de input; reasoning é subconjunto de output. `cost_json` combina usage observado com preços configurados, então seu estado é `estimated`. Ausência de dados permanece `null`, nunca vira economia zero.
+`usage_json` tem input, cached input, output, reasoning e total, cada um nullable, mais a origem. Cached input é subconjunto de input; a relação de reasoning com output depende do contrato do provider. `cost_json` pode usar custo reportado pelo OpenRouter (`measured`) ou combinar usage observado com preços configurados (`estimated`). Ausência de dados permanece `null`, nunca vira economia zero.
 
 O banco não armazena automaticamente casos privados, API keys ou texto das chamadas. O benchmark sintético é distribuído em código. A CLI não ativa treinamento com pedidos reais.
 

@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { randomUUID } from "node:crypto";
 import { OpenAIAdapter, RuntimeRouter, type SqliteStore } from "@semantic-ir/engine";
 import type { UsageMetrics } from "@semantic-ir/core";
-import { adapterFor } from "./service.js";
+import { adapterFor, providerFor } from "./service.js";
 
 async function readJson(request: IncomingMessage): Promise<unknown> {
   let body = "";
@@ -50,8 +50,14 @@ export function createGateway(store: SqliteStore) {
         });
         response.end("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\">" +
           "<title>Semantic IR metrics</title><h1>Semantic IR</h1>" +
+          "<p>Provider: " + escapeHtml(providerFor(store)) + "</p>" +
+          "<p>Default model: " + escapeHtml(store.getSetting<string>("defaultModel") ?? "unconfigured") + "</p>" +
           "<p>Observed requests: " + metrics.requests + "</p>" +
           "<p>Fallbacks: " + metrics.fallbacks + "</p>" +
+          "<p>Measured inference cost (USD): " +
+          (metrics.measuredCostUsd === null ? "unavailable" : metrics.measuredCostUsd.toFixed(8)) + "</p>" +
+          "<p>Estimated inference cost (USD): " +
+          (metrics.estimatedCostUsd === null ? "unavailable" : metrics.estimatedCostUsd.toFixed(8)) + "</p>" +
           "<p>Verified savings: unavailable</p>" +
           "<p>Host primary prompt optimization: unavailable</p>" +
           "<table><tr><th>Optimization scope</th><th>Requests</th></tr>" + rows + "</table></html>");
@@ -154,6 +160,7 @@ export function createGateway(store: SqliteStore) {
         semantic_ir: {
           scope: "application_request", codec: routed.decision.codecVersion,
           fallback_reason: routed.decision.fallbackReason,
+          cost: routed.response.cost ?? adapter.estimateCost(usage),
         },
       });
     } catch (error) {

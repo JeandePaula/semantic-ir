@@ -5,13 +5,16 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { analyzePrompt, TaskClassSchema, type BenchmarkSuite } from "@semantic-ir/core";
 import {
-  compilePrompt, DEFAULT_CODECS, SYNTHETIC_SUITE,
+  compilePrompt, DEFAULT_CODECS, RuntimeRouter, SYNTHETIC_SUITE,
   type OpenAIPrice,
 } from "@semantic-ir/engine";
 import { createGateway } from "./gateway.js";
 import { integrationReport } from "./hosts.js";
 import { startMcpServer } from "./mcp.js";
-import { databasePath, openStore, runCalibration } from "./service.js";
+import {
+  adapterFor, databasePath, openStore, providerFor, providerKey,
+  runCalibration, saveProviderKey,
+} from "./service.js";
 
 const argv = process.argv.slice(2);
 const command = argv[0] ?? "help";
@@ -42,6 +45,41 @@ const positiveInteger = (name: string): number => {
 };
 const print = (value: unknown): void => { process.stdout.write(JSON.stringify(value, null, 2) + "\n"); };
 const integrationsDir = fileURLToPath(new URL("../assets/integrations/", import.meta.url));
+
+async function readSecretInput(): Promise<string> {
+  if (!process.stdin.isTTY) {
+    let secret = "";
+    for await (const chunk of process.stdin) {
+      secret += String(chunk);
+      if (secret.length > 4096) throw new Error("API key input too large");
+    }
+    return secret.trim();
+  }
+  process.stderr.write("API key (hidden): ");
+  return new Promise<string>((resolve, reject) => {
+    let secret = "";
+    const finish = (error?: Error): void => {
+      process.stdin.off("data", onData);
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      process.stderr.write("\n");
+      if (error) reject(error);
+      else resolve(secret.trim());
+    };
+    const onData = (chunk: Buffer): void => {
+      for (const char of chunk.toString("utf8")) {
+        if (char === "\r" || char === "\n") { finish(); return; }
+        if (char === "\u0003") { finish(new Error("Cancelled")); return; }
+        if (char === "\u007f" || char === "\b") secret = secret.slice(0, -1);
+        else secret += char;
+        if (secret.length > 4096) { finish(new Error("API key input too large")); return; }
+      }
+    };
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on("data", onData);
+  });
+}
 
 function model(store: ReturnType<typeof openStore>): string {
   return option("model") ?? store.getSetting<string>("defaultModel") ?? "";
@@ -82,8 +120,10 @@ async function main(): Promise<void> {
   try {
     if (command === "help") {
       print({ commands: [
-        "init", "configure --model MODEL --input-price USD_PER_M --cached-price USD_PER_M --output-price USD_PER_M --price-version NAME",
+        "init", "configure --provider openai|openrouter --model MODEL [price options]",
+        "credentials import --provider openrouter < keyfile", "credentials status",
         "analyze PROMPT", "compile --codec ID PROMPT", "doctor", "profile", "codecs list|inspect",
+        "invoke --allow-spend --max-output-tokens N --prompt PROMPT",
         "calibrate|benchmark|optimize --model MODEL --allow-spend --max-requests N --max-tokens N --max-cost-usd N --max-duration-ms N",
         "rollback --provider openai --model MODEL --task TASK", "metrics",
         "proxy --port 8787", "mcp", "integrations list|status|doctor|build",
@@ -98,6 +138,7 @@ async function main(): Promise<void> {
     }
     if (command === "configure") {
       const selectedModel = required("model");
+      const selectedProvider = z.enum(["openai", "openrouter"]).parse(option("provider") ?? "openai");
       const hasPriceOption = ["price-version", "input-price", "cached-price", "output-price"]
         .some((name) => option(name) !== undefined);
       const price: OpenAIPrice | null = hasPriceOption ? {
@@ -107,9 +148,24 @@ async function main(): Promise<void> {
         outputUsdPerMillion: positiveNumber("output-price"),
       } : null;
       store.setSetting("defaultModel", selectedModel);
-      if (price) store.setSetting("price:" + selectedModel, price);
-      print({ model: selectedModel, price, apiKeyStored: false });
+      store.setSetting("defaultProvider", selectedProvider);
+      if (price) store.setSetting("price:" + selectedProvider + ":" + selectedModel, price);
+      print({ provider: selectedProvider, model: selectedModel, price, apiKeyStoredInDatabase: false });
       return;
+    }
+    if (command === "credentials") {
+      if (argv[1] === "status") {
+        const provider = providerFor(store);
+        print({ provider, configured: Boolean(providerKey(provider)) });
+        return;
+      }
+      if (argv[1] === "import") {
+        const provider = z.enum(["openai", "openrouter"]).parse(required("provider"));
+        const path = saveProviderKey(provider, await readSecretInput());
+        print({ provider, stored: true, path, permissions: "0600" });
+        return;
+      }
+      throw new Error("Use credentials import or credentials status");
     }
     if (command === "analyze") {
       const prompt = argv.slice(1).join(" ");
@@ -125,13 +181,33 @@ async function main(): Promise<void> {
       return;
     }
     if (command === "doctor") {
+      const provider = providerFor(store);
       print({
         database: databasePath(), databaseReady: true,
-        providerKeyConfigured: Boolean(process.env.OPENAI_API_KEY),
+        provider, providerKeyConfigured: Boolean(providerKey(provider)),
         model: model(store) || null,
         codexPackage: existsSync(join(integrationsDir, "codex", "plugins", "semantic-ir", "plugin.json")),
         claudePackage: existsSync(join(integrationsDir, "claude-code", "plugins", "semantic-ir", ".claude-plugin", "plugin.json")),
         hostPrimaryPromptOptimization: "unavailable",
+      });
+      return;
+    }
+    if (command === "invoke") {
+      if (!has("allow-spend")) throw new Error("Provider calls require --allow-spend");
+      const selectedModel = model(store);
+      if (!selectedModel) throw new Error("Set --model or run configure");
+      const prompt = required("prompt");
+      const adapter = adapterFor(store, selectedModel);
+      const router = new RuntimeRouter(adapter, store);
+      const routed = await router.invoke(prompt, {
+        scope: "application_request", maxOutputTokens: positiveInteger("max-output-tokens"),
+      });
+      print({
+        provider: providerFor(store), model: selectedModel,
+        response: routed.response.text, usage: routed.response.usage,
+        latencyMs: routed.response.latencyMs,
+        cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
+        decision: routed.decision,
       });
       return;
     }
