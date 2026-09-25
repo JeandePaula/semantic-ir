@@ -82,7 +82,23 @@ Abra uma nova sessão no host, confirme que o servidor MCP `semantic-ir` está c
 
 ### ChatGPT
 
-O MCP local `stdio` também pode ser ligado ao ChatGPT por [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels), sem abrir uma porta pública. Isso exige acesso a **Developer mode** no ChatGPT, um `tunnel_id` criado no OpenAI Platform e uma chave de runtime **OpenAI Platform** para `tunnel-client`; a chave OpenRouter continua sendo usada somente pelo Semantic IR para chamar o modelo. Configure o tunnel-client no mesmo ambiente da CLI com `--mcp-command "semantic-ir mcp"`, rode `tunnel-client doctor` e `tunnel-client run`, então crie uma conexão **Tunnel** em ChatGPT Plugins. Abra um novo chat e habilite a conexão. Sem esse túnel ou um MCP remoto HTTPS, o plugin local do Codex não aparece automaticamente em uma conversa comum do ChatGPT. Publicação no diretório universal requer um endpoint HTTPS estável e revisão própria.
+O MCP local `stdio` pode ser ligado ao ChatGPT por [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels), sem abrir uma porta pública. Para isso:
+
+1. Ative **Developer mode** em ChatGPT > Settings > Security and login, se sua conta ou workspace permitir.
+2. Crie um `tunnel_id` nas [configurações de túnel do OpenAI Platform](https://platform.openai.com/settings/organization/tunnels) e associe o workspace do ChatGPT. Obtenha também uma chave de runtime **OpenAI Platform** com permissão para usar o túnel. Essa chave é separada da chave OpenRouter, que continua somente no Semantic IR.
+3. Instale o `tunnel-client` no mesmo WSL da CLI seguindo a documentação oficial e configure `CONTROL_PLANE_API_KEY` fora do repositório. Execute:
+
+```sh
+tunnel-client init --sample sample_mcp_stdio_local \
+  --profile semantic-ir --tunnel-id SEU_TUNNEL_ID \
+  --mcp-command "$(command -v semantic-ir) mcp"
+tunnel-client doctor --profile semantic-ir --explain
+tunnel-client run --profile semantic-ir
+```
+
+4. Com o cliente do túnel em execução, abra [ChatGPT Plugins](https://chatgpt.com/plugins), crie uma conexão em modo de desenvolvedor e escolha **Tunnel**. Selecione o túnel criado; em um novo chat, habilite essa conexão no menu de ferramentas e faça a chamada real indicada acima.
+
+Sem esse túnel ou um MCP remoto HTTPS, o plugin local do Codex não aparece automaticamente em uma conversa comum do ChatGPT. A conexão fornece ferramentas para chamadas explícitas, sem substituir o prompt primário do ChatGPT. Publicação no diretório universal requer um endpoint HTTPS estável e revisão própria.
 
 ### Cliente MCP genérico
 
