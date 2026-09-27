@@ -2,6 +2,8 @@
 
 [English](README.md). O README em inglês inclui também o [teste complexo](docs/experiments/complex-json/README.md): a compactação barateou as chamadas, mas nenhuma das versões passou na avaliação completa da qualidade. Os resultados positivos abaixo se limitam à extração simples.
 
+**Atualização:** o fluxo agora prioriza operações locais explícitas e verificação de respostas, guiado por uma skill. O caso complexo foi resolvido integralmente conforme o gabarito anterior, e os seis casos de extração acertaram com **zero chamadas/tokens downstream**. Isso não inclui o consumo do agente/host. Veja o [novo relatório](docs/reports/local-execution.json), o [resultado correto](docs/experiments/complex-json/local-result.json) e a [decisão técnica](docs/quality-workflow.md). Os resultados de compactação abaixo são históricos.
+
 Camada local para analisar prompts, testar codecs declarativos e encaminhar chamadas controladas a LLMs. O objetivo comercial é reduzir **custo por tarefa bem-sucedida**, medido contra o prompt original. Sem evidência de sucesso e custo, o runtime usa o original e não anuncia economia.
 
 ## Estado do produto

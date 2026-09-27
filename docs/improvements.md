@@ -1,5 +1,17 @@
 # Diagnóstico e melhorias
 
+## Correção posterior: execução local e validação da resposta
+
+O teste complexo mostrou que o defeito não estava apenas no compressor: o original também errava contas e alocação. Em 27/09/2026, o fluxo foi simplificado para **operação local explícita → resultado verificado → LLM quando necessário**. A skill orienta essa escolha; código testado aplica as regras. A comparação das técnicas pesquisadas, fontes e limites está em [quality-workflow.md](quality-workflow.md).
+
+- `execute_local` / CLI `execute` resolvem seleção de JSON e alocação sob contratos versionados. O resultado completo do teste complexo corresponde ao gabarito independente anterior: 8 aprovados, 6 rejeitados, 1 cancelado e 4 eventos superados, com todos os valores e estoques corretos. Os seis casos de extração também acertaram, sem chamadas pagas.
+- Cálculos monetários usam BigInt internamente. Dados ambíguos, referências inválidas, chaves repetidas no JSON textual, números imprecisos e regras não suportadas são rejeitados. O motor não tenta deduzir regras arbitrárias a partir de texto livre.
+- CLI `--out` grava a resposta exata em arquivo novo e devolve um recibo curto, evitando devolver todo o payload ao contexto do agente. As skills de Codex, Claude Code e Antigravity incluem o passo a passo e os contratos.
+- `invoke` / `invoke_prompt` / SDK aceitam `responseContract`; respostas divergentes ou incompletas não são entregues como sucesso. Usage e custo disponíveis são registrados antes da rejeição, sem retry pago automático. Sem referência independente, o status é `unverified`.
+- O [relatório local](reports/local-execution.json) e a [resposta completa correta](experiments/complex-json/local-result.json) são reproduzíveis com `npm run verify:local`. O verificador rejeitou as quatro respostas históricas, preservando esses arquivos e o gabarito original.
+
+Nessas operações formais, a execução evita **100% dos tokens de inferência downstream**. Isso não elimina os tokens do Codex/host, o esforço de implementação ou o custo da máquina. Não é uma promessa de compactação universal nem de qualidade garantida para perguntas abertas. Os resultados pagos abaixo permanecem como evidência histórica, incluindo as falhas.
+
 A revisão identificou que reduzir a entrada, isoladamente, não resolve custo por tarefa. O relatório local de calibração de 25/09/2026 tinha dois casos corretos: ambos passaram de 586 para 59 tokens de entrada, mas as saídas cresceram de 34 para 62 e de 54 para 67 tokens. No primeiro, o custo subiu de US$ 0,000010970 para US$ 0,000011335. Não houve promoção nem holdout; as cinco chamadas registradas usaram fallback. Esses números pertencem à versão anterior. O relatório antigo não separava reasoning/cache por caso, portanto não é possível atribuir o crescimento especificamente a reasoning.
 
 Outras causas observadas:
@@ -11,7 +23,7 @@ Outras causas observadas:
 - Ter uma tabela de preço configurada desativava o cache de respostas OpenRouter inclusive no runtime.
 - Nenhum relatório mostrava quanto uso seria necessário para recuperar o custo da calibração.
 
-## Mudanças implementadas
+## Melhorias anteriores de compactação
 
 1. Auditoria local na CLI (`audit`) e MCP (`audit_prompt`), sem inferências. O planejador descarta entradas maiores, reduções inferiores a 128 bytes e resultados duplicados antes da primeira chamada. A classe pública `EvolutionaryOptimizer` foi preservada por compatibilidade, mas a busca agora avalia candidatos úteis, sem as mutações redundantes anteriores.
 2. Codec `json_compact`, com transformação lexical verificável. Remove somente whitespace JSON fora de strings; preserva números, escapes, chaves repetidas e ordem. A reprodução integral do transform é exigida para flexibilizar o checksum textual de um literal JSON. Casos que pedem o original, tamanho, posição, formatação, hash ou reprodução literal não são transformados.

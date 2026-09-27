@@ -6,3 +6,5 @@ export * from "./benchmark.js";
 export * from "./optimizer.js";
 export * from "./runtime.js";
 export * from "./audit.js";
+export * from "./quality.js";
+export * from "./local.js";

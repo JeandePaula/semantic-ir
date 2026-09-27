@@ -21,6 +21,18 @@ describe("MCP stdio integration", () => {
       expect(tools.tools.map((item) => item.name)).toContain("analyze_prompt");
       expect(tools.tools.map((item) => item.name)).toContain("calibrate_model");
       expect(tools.tools.map((item) => item.name)).toContain("audit_prompt");
+      const executed = await client.callTool({ name: "execute_local", arguments: { task: {
+        kind: "json_select_v1", data: { launch: { color: "GREEN" } }, path: ["launch", "color"],
+      } } });
+      const executedText = executed.content[0];
+      if (executedText?.type !== "text") throw new Error("Expected local execution response");
+      expect(JSON.parse(executedText.text)).toMatchObject({ result: "GREEN", usage: { providerCalls: 0 } });
+      const verified = await client.callTool({ name: "verify_response", arguments: {
+        response: '{"total":2}', contract: { kind: "exact_json", expected: '{"total":1}' },
+      } });
+      const verifiedText = verified.content[0];
+      if (verifiedText?.type !== "text") throw new Error("Expected answer verification response");
+      expect(JSON.parse(verifiedText.text)).toMatchObject({ status: "rejected" });
       const audit = await client.callTool({ name: "audit_prompt", arguments: { prompt: "Extract BLUE." } });
       const auditText = audit.content[0];
       if (auditText?.type !== "text") throw new Error("Expected audit response");

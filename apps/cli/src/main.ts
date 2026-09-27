@@ -8,6 +8,7 @@ import {
   auditPrompt, compilePrompt, DEFAULT_CODECS, diagnoseReport, JSON_EXTRACTION_SUITE,
   REDUNDANT_EXTRACTION_SUITE, RuntimeRouter, SYNTHETIC_SUITE,
   type OpenAIPrice,
+  executeLocalTask, parseStrictJson, prepareResponseValidator, ResponseContractSchema, ResponseQualityError,
 } from "@semantic-ir/engine";
 import { createGateway } from "./gateway.js";
 import { integrationReport } from "./hosts.js";
@@ -116,6 +117,26 @@ function suite(): BenchmarkSuite {
 }
 
 async function main(): Promise<void> {
+  // Pure local commands need neither a model nor a database or credentials.
+  if (command === "execute") {
+    const input = parseStrictJson(readFileSync(required("file"), "utf8"));
+    const executed = executeLocalTask(has("kind") ? { kind: required("kind"), data: input } : input);
+    if (has("out")) {
+      const { result, ...receipt } = executed;
+      const outputFile = resolve(required("out"));
+      if (outputFile === resolve(required("file"))) throw new Error("Output must not overwrite input");
+      writeFileSync(outputFile, JSON.stringify(result, null, 2) + "\n", { flag: "wx" });
+      print({ ...receipt, outputFile });
+    } else print(executed);
+    return;
+  }
+  if (command === "verify") {
+    const contract = ResponseContractSchema.parse(parseStrictJson(readFileSync(required("contract"), "utf8")));
+    const quality = prepareResponseValidator(contract)(readFileSync(required("file"), "utf8"));
+    print(quality);
+    if (quality.status === "rejected") process.exitCode = 1;
+    return;
+  }
   if (command === "mcp") {
     await startMcpServer();
     return;
@@ -128,7 +149,10 @@ async function main(): Promise<void> {
         "credentials import --provider openrouter < keyfile", "credentials status",
         "analyze PROMPT", "compile --codec ID PROMPT", "doctor", "profile", "codecs list|inspect",
         "audit --prompt PROMPT | --file PATH | --suite json-extraction|redundant-extraction|PATH (local, no provider calls)",
-        "invoke --allow-spend --max-output-tokens N --prompt PROMPT",
+        "execute --file TASK.json [--out ANSWER.json] (local deterministic execution, no provider calls)",
+        "execute --kind order_allocation_v1 --file INPUT.json [--out ANSWER.json]",
+        "verify --contract CONTRACT.json --file ANSWER (local answer verification)",
+        "invoke --allow-spend --max-output-tokens N --prompt PROMPT [--contract CONTRACT.json]",
         "calibrate|benchmark|optimize --model MODEL --allow-spend --max-requests N --max-tokens N --max-cost-usd N --max-duration-ms N [--suite redundant-extraction] [--max-output-tokens N]",
         "calibration report [--model MODEL]", "metrics",
         "rollback --provider openai|openrouter --model MODEL --task TASK",
@@ -229,6 +253,8 @@ async function main(): Promise<void> {
       const router = new RuntimeRouter(adapter, store);
       const routed = await router.invoke(prompt, {
         scope: "application_request", maxOutputTokens: positiveInteger("max-output-tokens"),
+        ...(has("contract") ? { responseContract: ResponseContractSchema.parse(
+          parseStrictJson(readFileSync(required("contract"), "utf8"))) } : {}),
       });
       print({
         provider: providerFor(store), model: selectedModel,
@@ -236,6 +262,7 @@ async function main(): Promise<void> {
         latencyMs: routed.response.latencyMs,
         cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
         decision: routed.decision,
+        quality: routed.quality,
       });
       return;
     }
@@ -407,6 +434,12 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
+  if (error instanceof ResponseQualityError) {
+    print({ error: error.message, quality: error.quality, usage: error.usage, cost: error.cost,
+      decision: error.decision });
+    process.exitCode = 1;
+    return;
+  }
   const message = error instanceof Error ? error.message : "Unknown error";
   process.stderr.write("semantic-ir: " + message + "\n");
   process.exitCode = 1;

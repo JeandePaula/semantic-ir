@@ -169,6 +169,7 @@ export function createGateway(store: SqliteStore) {
         },
         semantic_ir: {
           scope: "application_request", codec: routed.decision.codecVersion,
+          quality: routed.quality,
           fallback_reason: routed.decision.fallbackReason,
           cost: routed.response.cost ?? adapter.estimateCost(usage),
         },

@@ -133,6 +133,7 @@ export interface CostMetrics {
 
 export interface ModelResponse {
   readonly text: string;
+  readonly completionStatus?: "completed" | "incomplete" | "unavailable";
   readonly usage: UsageMetrics;
   readonly cost?: CostMetrics;
   readonly latencyMs: number;

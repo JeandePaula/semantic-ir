@@ -6,12 +6,23 @@ import type {
 } from "@semantic-ir/core";
 import { compilePrompt } from "./codec.js";
 import type { SqliteStore } from "./storage.js";
+import { prepareResponseValidator, type QualityResult, type ResponseContract } from "./quality.js";
 
 export interface RoutedResponse {
   readonly response: ModelResponse;
   readonly decision: RuntimeDecision;
   readonly semanticResult: SemanticIR | null;
   readonly structuredResult: unknown | null;
+  readonly quality: QualityResult;
+}
+
+/** A rejected answer is not returned as a successful response. Charges remain recorded. */
+export class ResponseQualityError extends Error {
+  constructor(readonly quality: QualityResult, readonly usage: ModelResponse["usage"],
+    readonly cost: ModelResponse["cost"] | null, readonly decision: RuntimeDecision) {
+    super("Response rejected: " + quality.reasons.join(", "));
+    this.name = "ResponseQualityError";
+  }
 }
 
 export function classifyRisk(ir: SemanticIR): RuntimeDecision["risk"] {
@@ -69,7 +80,9 @@ export class RuntimeRouter {
     mode?: OutputMode;
     scope?: OptimizationScope;
     maxOutputTokens?: number;
+    responseContract?: ResponseContract;
   } = {}): Promise<RoutedResponse> {
+    const validateResponse = prepareResponseValidator(options.responseContract);
     const route = await this.decide(prompt);
     const fingerprint = await this.adapter.getModelFingerprint();
     const makeRequest = (text: string): ModelRequest => ({
@@ -88,12 +101,16 @@ export class RuntimeRouter {
       codecId: decision.codecVersion, fallbackReason: decision.fallbackReason,
       usage: response.usage, cost, latencyMs: response.latencyMs,
     });
+    const quality: QualityResult = response.completionStatus === "incomplete" || !response.text.trim()
+      ? { status: "rejected", validator: options.responseContract?.kind ?? null, reasons: ["incomplete_response"] }
+      : validateResponse(response.text);
+    if (quality.status === "rejected") throw new ResponseQualityError(quality, response.usage, cost, decision);
     let structuredResult: unknown = null;
     if (options.mode === "structured") {
       try { structuredResult = JSON.parse(response.text) as unknown; } catch { /* unavailable */ }
     }
     return {
-      response, decision,
+      response, decision, quality,
       semanticResult: options.mode === "agent" ? analyzePrompt(response.text) : null,
       structuredResult,
     };

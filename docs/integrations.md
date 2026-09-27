@@ -1,5 +1,7 @@
 # Integrações com agentes
 
+As skills agora orientam execução local antes de compactação. `execute_local` (MCP) e `semantic-ir execute --file TASK.json --out ANSWER.json` (CLI) resolvem contratos explícitos sem chave/provider. `verify_response` verifica uma resposta contra referência independente. `invoke_prompt` aceita `responseContract` e distingue qualidade verificada/indisponível, rejeitando divergências. Os detalhes estão na [skill](../integrations/codex/skills/semantic-ir/SKILL.md) e em [seus contratos](../integrations/codex/skills/semantic-ir/references/contracts.md). O build inclui essas referências nos três pacotes; instalações antigas precisam receber a CLI e o plugin atualizados.
+
 ## Limite de controle
 
 Codex, Claude Code e Google Antigravity recebem plugins com skill e servidor MCP compartilhado. Essas superfícies permitem pedir análise, consultar profiles, fazer uma chamada real consentida ao provider e usar um gateway para chamadas controladas. As documentações atuais não garantem substituição do prompt primário antes da inferência do próprio agente. Portanto `host_primary_prompt_optimization = unavailable` nos três hosts. O gateway controla `application_request` e a ferramenta MCP `invoke_prompt` controla `downstream_llm_call`; as demais mensagens só são compiladas quando enviadas explicitamente pela aplicação ou skill.

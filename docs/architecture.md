@@ -1,5 +1,9 @@
 # Arquitetura implementada
 
+O caminho preferido para tarefas determinísticas suportadas é `contrato estruturado → executeLocalTask → resultado + recibo`, sem adapter, profile ou provider. `json_select_v1` faz seleção/filtro por caminhos explícitos; `order_allocation_v1` aplica regras versionadas com aritmética inteira. A skill ajuda a escolher a rota, sem inferir equivalência automática entre texto livre e contrato. Consulte [quality-workflow.md](quality-workflow.md).
+
+O runtime de LLM também aceita um `responseContract` independente, preparado antes de inferência. Respostas divergentes, vazias ou sabidamente incompletas são rejeitadas após registrar usage/custo disponível. Sem contrato, a qualidade é `unverified`. CLI/MCP expõem execução e verificação locais; o gateway básico expõe o estado sem fornecer oracles próprios. Esses checks complementam a verificação de transformação descrita abaixo.
+
 O fluxo controlado é `texto → SemanticIR → codec por modelo/tarefa → provider → avaliação/saída`. O texto original acompanha o IR em memória e permanece o fallback. O analisador é heurístico e parcial; não reivindica compreensão completa ou entailment formal.
 
 | Componente | Responsabilidade atual |

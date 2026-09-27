@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://semantic-ir.local/schemas/response-contract-v1.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "exact_text"
+        },
+        "expected": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "expected"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "exact_json"
+        },
+        "expected": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "expected"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

@@ -4,7 +4,8 @@ import { z } from "zod";
 import { analyzePrompt, sha256 } from "@semantic-ir/core";
 import type { TaskClass } from "@semantic-ir/core";
 import { auditPrompt, compilePrompt, DEFAULT_CODECS, diagnoseReport, JSON_EXTRACTION_SUITE, REDUNDANT_EXTRACTION_SUITE,
-  RuntimeRouter, SYNTHETIC_SUITE, validateCompiled } from "@semantic-ir/engine";
+  RuntimeRouter, SYNTHETIC_SUITE, validateCompiled, executeLocalTask, LocalTaskSchema,
+  ResponseContractSchema, prepareResponseValidator, ResponseQualityError } from "@semantic-ir/engine";
 import { adapterFor, openStore, providerFor, providerKey, runCalibration } from "./service.js";
 
 const result = (value: unknown) => ({
@@ -14,6 +15,16 @@ const result = (value: unknown) => ({
 export async function startMcpServer(): Promise<void> {
   const store = openStore();
   const server = new McpServer({ name: "semantic-ir", version: "0.3.1" });
+  server.registerTool("execute_local", {
+    description: "Execute an explicit versioned JSON selection or order-allocation contract locally. Zero downstream LLM calls. Does not infer rules from prose.",
+    inputSchema: { task: LocalTaskSchema },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  }, ({ task }) => result(executeLocalTask(task)));
+  server.registerTool("verify_response", {
+    description: "Check a complete answer against a trusted exact text or JSON reference. Local; no provider calls. Valid JSON alone is not correctness.",
+    inputSchema: { response: z.string().max(1_000_000), contract: ResponseContractSchema },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  }, ({ response, contract }) => result(prepareResponseValidator(contract)(response)));
   server.registerTool("audit_prompt", {
     description: "Compare local compression candidates before spending. Reports bytes, never unmeasured token or cost savings.",
     inputSchema: { prompt: z.string().min(1).max(1_000_000) },
@@ -114,22 +125,31 @@ export async function startMcpServer(): Promise<void> {
       model: z.string().min(1).optional(),
       allowSpend: z.literal(true),
       maxOutputTokens: z.number().int().positive(),
+      responseContract: ResponseContractSchema.optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-  }, async ({ prompt, model, maxOutputTokens }) => {
+  }, async ({ prompt, model, maxOutputTokens, responseContract }) => {
     const selectedModel = model ?? store.getSetting<string>("defaultModel");
     if (!selectedModel) throw new Error("Configure a model first with semantic-ir configure");
     const adapter = adapterFor(store, selectedModel);
-    const routed = await new RuntimeRouter(adapter, store).invoke(prompt, {
-      scope: "downstream_llm_call", maxOutputTokens,
-    });
-    return result({
-      provider: providerFor(store), model: selectedModel,
-      response: routed.response.text, usage: routed.response.usage,
-      latencyMs: routed.response.latencyMs,
-      cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
-      decision: routed.decision,
-    });
+    try {
+      const routed = await new RuntimeRouter(adapter, store).invoke(prompt, {
+        scope: "downstream_llm_call", maxOutputTokens,
+        ...(responseContract ? { responseContract } : {}),
+      });
+      return result({
+        provider: providerFor(store), model: selectedModel,
+        response: routed.response.text, usage: routed.response.usage,
+        latencyMs: routed.response.latencyMs,
+        cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
+        decision: routed.decision,
+        quality: routed.quality,
+      });
+    } catch (error) {
+      if (!(error instanceof ResponseQualityError)) throw error;
+      return { ...result({ error: error.message, quality: error.quality, usage: error.usage,
+        cost: error.cost, decision: error.decision }), isError: true };
+    }
   });
 
   server.registerTool("calibrate_model", {

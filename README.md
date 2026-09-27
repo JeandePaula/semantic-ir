@@ -1,10 +1,51 @@
 # Semantic IR
 
-Local prompt analysis, conservative compression, and cost-aware LLM experiments. Semantic IR aims to reduce **cost per successful task**, measured against the original prompt. It keeps the original request when a codec lacks a stable profile or the runtime's risk checks reject the transformation.
+Deterministic local data operations, answer verification, and conservative prompt compression. Semantic IR reduces **cost per successful task** by choosing local execution when the rules are explicit, then using measured LLM optimization where interpretation is needed. A routing fallback to the original prompt does not guarantee a correct answer.
 
 [Português](README.pt-BR.md) · [Architecture](docs/architecture.md) · [Host integrations](docs/integrations.md) · [Detailed findings](docs/improvements.md)
 
-## Measured results
+## Start with a verified local operation
+
+The complex allocation experiment exposed the wrong optimization target: both normal and compacted prompts produced incorrect calculations. The current workflow moves exact selection, arithmetic, sorting, and inventory updates into tested code. A short [skill](integrations/codex/skills/semantic-ir/SKILL.md) guides the choice of route and verification; CLI/MCP enforce the supported contracts.
+
+| Current local check | Correctness | Downstream LLM tokens | Downstream API cost |
+| --- | --- | ---: | ---: |
+| Six JSON extraction inputs | 6/6 exact answers | 0 | $0 |
+| Complete complex allocation input | Exact match to the pre-existing independent reference, all fields | 0 | $0 |
+
+The complex result also survives 19 deterministic event-order permutations. The automated suite adds 100 randomized event permutations, 250 generated quantity/price/stock/discount cases, malformed-data checks, numeric precision tests, and response rejection tests. These cover explicit contracts, not arbitrary reasoning.
+
+This avoids **100% of downstream inference tokens for these supported operations**. Host-agent reasoning/tool-output tokens, development effort, CPU, and electricity are not included. This is a change of execution architecture, not evidence that general prompt compression preserves quality. No new paid calls were needed. See the [reproducible local report](docs/reports/local-execution.json), [complete correct result](docs/experiments/complex-json/local-result.json), and [design/research comparison](docs/quality-workflow.md).
+
+After building, solve the allocation example directly:
+
+```sh
+node apps/cli/bundle/main.js execute --kind order_allocation_v1 \
+  --file docs/experiments/complex-json/input.json --out allocation-answer.json
+npm run verify:local
+```
+
+`--out` writes the full answer to a **new** file and prints only a compact receipt, avoiding a large tool result in the host context. Without `--out`, the result is printed. Local execution needs no model, credentials, profile, or calibration. For a JSON selection, save a task file:
+
+```json
+{"kind":"json_select_v1","data":{"launch":{"color":"GREEN"}},"path":["launch","color"]}
+```
+
+Run `semantic-ir execute --file task.json` or MCP `execute_local` with `{ "task": ... }`. Read the [versioned contracts](integrations/codex/skills/semantic-ir/references/contracts.md) for filtering and allocation rules. Unknown or ambiguous rules must be handled explicitly; the engine does not translate arbitrary prose into these contracts.
+
+## Reject incorrect model answers
+
+CLI `invoke --contract contract.json`, MCP `invoke_prompt.responseContract`, and SDK `RuntimeRouter.invoke(..., {responseContract})` support trusted exact-text and exact-JSON references:
+
+```json
+{"kind":"exact_json","expected":"{\"total\":42}"}
+```
+
+Contracts are checked before spending. The final answer must match all fields, values, types, and array order; JSON object key order and layout may differ. Duplicate keys, unsafe numbers, and precision-losing decimals are rejected. `exact_text` includes whitespace. A mismatch or known incomplete response is rejected after recording its usage/cost, without a hidden paid retry. CLI exits nonzero and MCP sets `isError`; the rejected answer is not returned as a successful deliverable. Offline verification uses `semantic-ir verify --contract contract.json --file answer.json` or `verify_response`.
+
+Without a reference, responses are explicitly **unverified**. A reference must itself be trustworthy; copying a model answer into it proves nothing. For open-ended work, use task-specific tests or human-reviewed evaluation. A skill or a valid JSON schema cannot guarantee factual correctness.
+
+## Historical paid compression results
 
 These are small experiments with **OpenRouter / `z-ai/glm-5.3-flash`**, run on September 26, 2026. They are not a claim of universal savings or statistical equivalence.
 
@@ -151,6 +192,7 @@ npm run build
 npm run audit:savings
 node docs/experiments/complex-json/prepare.mjs
 node docs/experiments/complex-json/summarize.mjs
+npm run verify:local
 ```
 
 These checks are local and do not make paid calls. The complex experiment includes its full prompt, reference solver, evaluator, raw responses, and budget accounting. Its paid runner requires `--allow-spend` and refuses to overwrite existing results.

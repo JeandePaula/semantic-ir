@@ -28,8 +28,8 @@ export function evaluateCase(
   const hardConstraintPreservation = failures.some((value) => value.includes("constraint_")) ? 0 : 1;
   const oracle = testCase.expectedOutput;
   const hasOracle = oracle !== undefined;
-  const baselineSuccess = hasOracle && baseline.text.trim() === oracle;
-  const candidateSuccess = hasOracle && candidate.text.trim() === oracle;
+  const baselineSuccess = hasOracle && baseline.completionStatus !== "incomplete" && baseline.text.trim() === oracle;
+  const candidateSuccess = hasOracle && candidate.completionStatus !== "incomplete" && candidate.text.trim() === oracle;
   const behaviorSame = baseline.text.trim() === candidate.text.trim();
   const passedHardGates = failures.length === 0 && baselineSuccess && candidateSuccess && behaviorSame;
   return {

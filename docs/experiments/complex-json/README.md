@@ -1,5 +1,7 @@
 # Complex prompt: original vs. compacted
 
+**Subsequent local solution:** the versioned `order_allocation_v1` executor now produces the complete independent reference answer with zero downstream inference calls. See [local-result.json](local-result.json), the [offline report](../../reports/local-execution.json), and [workflow decision](../../quality-workflow.md). This changes execution architecture; it does not turn the failed compression experiment below into a success. The original prompt, reference, and paid responses remain unchanged.
+
 **Result: quality preservation was not established.** The compacted requests were cheaper in the two returned pairs, but neither version produced a completely correct answer. This is a failed quality experiment, not evidence of lower cost per successful task.
 
 ## Task and reference answer

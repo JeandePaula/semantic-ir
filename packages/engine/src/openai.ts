@@ -30,7 +30,7 @@ interface ResponseJson {
 interface ChatResponseJson {
   id?: string;
   model?: string;
-  choices?: Array<{ message?: { content?: string | null } }>;
+  choices?: Array<{ finish_reason?: string | null; message?: { content?: string | null } }>;
   usage?: {
     prompt_tokens?: number;
     completion_tokens?: number;
@@ -169,11 +169,13 @@ export class OpenAIAdapter implements ModelAdapter {
       }, request.timeoutMs, request.disableResponseCache);
       const body = await response.json() as ChatResponseJson;
       const content = body.choices?.[0]?.message?.content;
-      if (typeof content !== "string") throw new Error("openrouter response did not contain text");
+      const finishReason = body.choices?.[0]?.finish_reason;
       this.resolvedModel = body.model ?? this.resolvedModel;
       const usage = body.usage;
       return {
-        text: content,
+        text: typeof content === "string" ? content : "",
+        completionStatus: typeof content !== "string" || !content.trim() ? "incomplete" :
+          finishReason === "stop" ? "completed" : finishReason == null ? "unavailable" : "incomplete",
         usage: {
           inputTokens: usage?.prompt_tokens ?? null,
           cachedInputTokens: usage?.prompt_tokens_details?.cached_tokens ?? null,
@@ -198,7 +200,6 @@ export class OpenAIAdapter implements ModelAdapter {
     }, request.timeoutMs);
     const body = await response.json() as ResponseJson;
     const latencyMs = Math.round(performance.now() - start);
-    if (body.status !== "completed") throw new Error("Provider response did not complete");
     this.resolvedModel = body.model ?? this.resolvedModel;
     const text = (body.output ?? []).flatMap((item) => item.content ?? [])
       .filter((item) => item.type === "output_text")
@@ -206,6 +207,7 @@ export class OpenAIAdapter implements ModelAdapter {
     const usage = body.usage;
     return {
       text,
+      completionStatus: body.status === "completed" && text.trim() ? "completed" : "incomplete",
       usage: {
         inputTokens: usage?.input_tokens ?? null,
         cachedInputTokens: usage?.input_tokens_details?.cached_tokens ?? null,
