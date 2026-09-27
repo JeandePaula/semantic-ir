@@ -1,0 +1,147 @@
+{
+  "kind": "offline_byte_comparison",
+  "providerCalls": 0,
+  "tokenSavings": "unavailable",
+  "costSavings": "unavailable",
+  "suites": [
+    {
+      "suite": "json-extraction",
+      "cases": [
+        {
+          "caseId": "json-calibration-0",
+          "originalBytes": 2435,
+          "previousBestBytes": 2435,
+          "currentBestBytes": 950,
+          "codecId": "json_compact"
+        },
+        {
+          "caseId": "json-calibration-1",
+          "originalBytes": 2627,
+          "previousBestBytes": 2627,
+          "currentBestBytes": 1021,
+          "codecId": "json_compact"
+        },
+        {
+          "caseId": "json-validation-0",
+          "originalBytes": 3010,
+          "previousBestBytes": 3010,
+          "currentBestBytes": 1162,
+          "codecId": "json_compact"
+        },
+        {
+          "caseId": "json-validation-1",
+          "originalBytes": 3201,
+          "previousBestBytes": 3201,
+          "currentBestBytes": 1232,
+          "codecId": "json_compact"
+        },
+        {
+          "caseId": "json-holdout-0",
+          "originalBytes": 3586,
+          "previousBestBytes": 3586,
+          "currentBestBytes": 1375,
+          "codecId": "json_compact"
+        },
+        {
+          "caseId": "json-holdout-1",
+          "originalBytes": 3777,
+          "previousBestBytes": 3777,
+          "currentBestBytes": 1445,
+          "codecId": "json_compact"
+        }
+      ],
+      "originalBytes": 18636,
+      "previousBestBytes": 18636,
+      "currentBestBytes": 7185,
+      "reductionPercent": 61.44558918222794
+    },
+    {
+      "suite": "redundant-extraction",
+      "cases": [
+        {
+          "caseId": "rc-blue",
+          "originalBytes": 2774,
+          "previousBestBytes": 232,
+          "currentBestBytes": 232,
+          "codecId": "context_dedupe"
+        },
+        {
+          "caseId": "rc-green",
+          "originalBytes": 2806,
+          "previousBestBytes": 233,
+          "currentBestBytes": 233,
+          "codecId": "context_dedupe"
+        },
+        {
+          "caseId": "rv-amber",
+          "originalBytes": 2806,
+          "previousBestBytes": 233,
+          "currentBestBytes": 233,
+          "codecId": "context_dedupe"
+        },
+        {
+          "caseId": "rv-cyan",
+          "originalBytes": 2774,
+          "previousBestBytes": 232,
+          "currentBestBytes": 232,
+          "codecId": "context_dedupe"
+        },
+        {
+          "caseId": "rh-orange",
+          "originalBytes": 2838,
+          "previousBestBytes": 234,
+          "currentBestBytes": 234,
+          "codecId": "context_dedupe"
+        },
+        {
+          "caseId": "rh-violet",
+          "originalBytes": 2838,
+          "previousBestBytes": 234,
+          "currentBestBytes": 234,
+          "codecId": "context_dedupe"
+        }
+      ],
+      "originalBytes": 16836,
+      "previousBestBytes": 1398,
+      "currentBestBytes": 1398,
+      "reductionPercent": 91.69636493228795
+    },
+    {
+      "suite": "synthetic-exact",
+      "cases": [
+        {
+          "caseId": "c1",
+          "originalBytes": 52,
+          "previousBestBytes": 51,
+          "currentBestBytes": 52,
+          "codecId": null
+        },
+        {
+          "caseId": "c2",
+          "originalBytes": 49,
+          "previousBestBytes": 48,
+          "currentBestBytes": 49,
+          "codecId": null
+        },
+        {
+          "caseId": "v1",
+          "originalBytes": 43,
+          "previousBestBytes": 42,
+          "currentBestBytes": 43,
+          "codecId": null
+        },
+        {
+          "caseId": "h1",
+          "originalBytes": 43,
+          "previousBestBytes": 42,
+          "currentBestBytes": 43,
+          "codecId": null
+        }
+      ],
+      "originalBytes": 187,
+      "previousBestBytes": 183,
+      "currentBestBytes": 187,
+      "reductionPercent": 0
+    }
+  ]
+}

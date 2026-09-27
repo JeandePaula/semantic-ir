@@ -5,3 +5,4 @@ export * from "./evaluator.js";
 export * from "./benchmark.js";
 export * from "./optimizer.js";
 export * from "./runtime.js";
+export * from "./audit.js";

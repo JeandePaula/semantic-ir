@@ -1,0 +1,164 @@
+{
+  "model": "z-ai/glm-5.3-flash",
+  "method": "Controlled direct comparison; does not promote a profile or override runtime risk gates. Planned three repetitions per version, alternating pair order. Response cache disabled; provider input cache reported.",
+  "reference": "expected.json",
+  "exactMatchRule": "All keys, values, types and array order must match; JSON object key order and whitespace are ignored.",
+  "error": "openrouter response did not contain text",
+  "prompts": {
+    "normal": {
+      "bytes": 16789,
+      "sha256": "ee19085c5e55f2533c7c11b78085b66dd6041151fb21965235a332142a5ac04d"
+    },
+    "compact": {
+      "bytes": 9416,
+      "sha256": "e0465ceaf4e100d7049106581dceac35fdc99360899e76b7052aea5df2a902e6"
+    }
+  },
+  "runtimeDecision": {
+    "mode": "original",
+    "codecVersion": null,
+    "fallbackReason": "high_risk_or_low_classification_confidence",
+    "taskClass": "extraction",
+    "risk": "high",
+    "fingerprintSha256": "3a2b1fe7a01bc15c0d89ab7af859ed00c25004cfe050ee1ba2757a4527dfb990"
+  },
+  "runs": [
+    {
+      "version": "normal",
+      "repetition": 1,
+      "metrics": {
+        "validJson": true,
+        "allCorrect": false,
+        "dispositionsCorrect": true,
+        "approvedSequenceCorrect": true,
+        "rejectedSequenceCorrect": true,
+        "approvedRowsCorrect": 6,
+        "supersededAndCancelledCorrect": true,
+        "totalsCorrect": false,
+        "remainingCorrect": false,
+        "untrustedNoteIgnored": true,
+        "catalogPriceUsed": true
+      },
+      "costUsd": 0.00309692,
+      "usage": {
+        "inputTokens": 4248,
+        "cachedInputTokens": 0,
+        "outputTokens": 5854,
+        "reasoningTokens": 2581,
+        "totalTokens": 10102,
+        "source": "provider_usage"
+      }
+    },
+    {
+      "version": "compact",
+      "repetition": 1,
+      "metrics": {
+        "validJson": true,
+        "allCorrect": false,
+        "dispositionsCorrect": false,
+        "approvedSequenceCorrect": false,
+        "rejectedSequenceCorrect": false,
+        "approvedRowsCorrect": 4,
+        "supersededAndCancelledCorrect": true,
+        "totalsCorrect": false,
+        "remainingCorrect": false,
+        "untrustedNoteIgnored": true,
+        "catalogPriceUsed": true
+      },
+      "costUsd": 0.00241694,
+      "usage": {
+        "inputTokens": 2886,
+        "cachedInputTokens": 0,
+        "outputTokens": 4603,
+        "reasoningTokens": 2275,
+        "totalTokens": 7489,
+        "source": "provider_usage"
+      }
+    },
+    {
+      "version": "compact",
+      "repetition": 2,
+      "metrics": {
+        "validJson": true,
+        "allCorrect": false,
+        "dispositionsCorrect": false,
+        "approvedSequenceCorrect": false,
+        "rejectedSequenceCorrect": false,
+        "approvedRowsCorrect": 5,
+        "supersededAndCancelledCorrect": true,
+        "totalsCorrect": false,
+        "remainingCorrect": false,
+        "untrustedNoteIgnored": true,
+        "catalogPriceUsed": true
+      },
+      "costUsd": 0.00229744,
+      "usage": {
+        "inputTokens": 2886,
+        "cachedInputTokens": 0,
+        "outputTokens": 4364,
+        "reasoningTokens": 2186,
+        "totalTokens": 7250,
+        "source": "provider_usage"
+      }
+    },
+    {
+      "version": "normal",
+      "repetition": 2,
+      "metrics": {
+        "validJson": false,
+        "allCorrect": false,
+        "dispositionsCorrect": null,
+        "approvedSequenceCorrect": null,
+        "rejectedSequenceCorrect": null,
+        "approvedRowsCorrect": null,
+        "supersededAndCancelledCorrect": null,
+        "totalsCorrect": null,
+        "remainingCorrect": null,
+        "untrustedNoteIgnored": null,
+        "catalogPriceUsed": null
+      },
+      "costUsd": 0.00313632,
+      "usage": {
+        "inputTokens": 4248,
+        "cachedInputTokens": 4224,
+        "outputTokens": 6144,
+        "reasoningTokens": 3440,
+        "totalTokens": 10392,
+        "source": "provider_usage"
+      }
+    }
+  ],
+  "comparison": {
+    "normal": {
+      "completedResponses": 2,
+      "exactMatches": 0,
+      "validJson": 1,
+      "costUsd": 0.00623324,
+      "inputTokens": 8496,
+      "outputTokens": 11998,
+      "cachedInputTokens": 4224
+    },
+    "compact": {
+      "completedResponses": 2,
+      "exactMatches": 0,
+      "validJson": 2,
+      "costUsd": 0.00471438,
+      "inputTokens": 5772,
+      "outputTokens": 8967,
+      "cachedInputTokens": 0
+    }
+  },
+  "savingsPercentForCompletedPairs": 24.367102822929976,
+  "accounting": {
+    "requests": 5,
+    "tokens": 75211,
+    "measuredCostUsd": 0.01094762,
+    "accountedCostUsd": 0.015372980000000001,
+    "cumulativeRequests": 19,
+    "cumulativeMeasuredCostUsd": 0.01156562,
+    "cumulativeAccountedCostUsd": 0.015990980000000002
+  },
+  "allPlannedCallsCompleted": false,
+  "failedCallsWithUnknownBilling": 1,
+  "qualityGatePassed": false
+}

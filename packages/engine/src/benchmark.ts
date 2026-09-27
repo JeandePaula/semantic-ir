@@ -80,17 +80,49 @@ export const REDUNDANT_EXTRACTION_SUITE: BenchmarkSuite = {
   ],
 };
 
+/** Realistic structured payloads, with different values and shapes in each split. */
+export const JSON_EXTRACTION_SUITE: BenchmarkSuite = {
+  id: "json-extraction", version: "0.1.0",
+  cases: (["calibration", "validation", "holdout"] as const).flatMap((split, index) =>
+    [0, 1].map((variant) => {
+      const color = ["BLUE", "GREEN", "AMBER", "CYAN", "ORANGE", "VIOLET"][index * 2 + variant]!;
+      const records = Array.from({ length: 12 + index * 3 + variant }, (_, row) => ({
+        id: row, label: "Item " + row, active: row % 2 === 0, tags: ["stock", "approved"],
+      }));
+      return {
+        id: "json-" + split + "-" + variant, version: "0.1", split, taskClass: "extraction" as const,
+        prompt: "Extract the launch.color value from the JSON. Reply with the value only.\n" +
+          "```json\n" + JSON.stringify({ records, launch: { color } }, null, 4) + "\n```",
+        expectedLiterals: [color], expectedConstraints: ["only"], oracleId: "exact", expectedOutput: color,
+      };
+    })),
+};
+
 export class BudgetLedger {
   usedRequests = 0;
   usedTokens = 0;
   usedCostUsd = 0;
   measuredCostUsd: number | null = null;
   budgetMethod: "provider_count" | "conservative_byte_envelope" = "provider_count";
+  reservedTokens = 0;
+  reservedCostUsd = 0;
+  private unmeasuredCalls = 0;
+  get completeMeasuredCostUsd(): number | null {
+    return this.unmeasuredCalls === 0 ? this.measuredCostUsd : null;
+  }
   private readonly startedAt = Date.now();
 
-  constructor(readonly budget: CalibrationBudget) {}
+  constructor(readonly budget: CalibrationBudget) {
+    if (Object.values(budget).some((value) => !Number.isFinite(value) || value <= 0) ||
+        !Number.isSafeInteger(budget.maxRequests) || !Number.isSafeInteger(budget.maxTokens)) {
+      throw new Error("Invalid calibration budget");
+    }
+  }
 
   async invoke(adapter: ModelAdapter, request: ModelRequest): Promise<ModelResponse> {
+    if (!Number.isSafeInteger(request.maxOutputTokens) || (request.maxOutputTokens ?? 0) <= 0) {
+      throw new Error("Calibration requires a positive output token limit");
+    }
     const preflight = await adapter.preflight?.(request);
     const requestSlots = preflight ? 1 : 2;
     if (this.usedRequests + requestSlots > this.budget.maxRequests) {
@@ -123,6 +155,9 @@ export class BudgetLedger {
       upperCostUsd = upperCost.amountUsd;
     }
     const upperTokens = upperInputTokens + (request.maxOutputTokens ?? 0);
+    if (![upperInputTokens, upperCostUsd].every((value) => Number.isFinite(value) && value >= 0)) {
+      throw new Error("Invalid budget preflight");
+    }
     if (this.usedTokens + upperTokens > this.budget.maxTokens) throw new Error("Token budget exhausted");
     if (this.usedCostUsd + upperCostUsd > this.budget.maxCostUsd) {
       throw new Error("Cost budget exhausted");
@@ -133,6 +168,9 @@ export class BudgetLedger {
     // Reserve the upper bound before the network call. A failure still consumes budget.
     this.usedTokens += upperTokens;
     this.usedCostUsd += upperCostUsd;
+    this.reservedTokens += upperTokens;
+    this.reservedCostUsd += upperCostUsd;
+    this.unmeasuredCalls++;
     let response: ModelResponse;
     let retries = 0;
     while (true) {
@@ -160,17 +198,40 @@ export class BudgetLedger {
         this.usedRequests++;
         this.usedTokens += upperTokens;
         this.usedCostUsd += upperCostUsd;
+        this.reservedTokens += upperTokens;
+        this.reservedCostUsd += upperCostUsd;
+        this.unmeasuredCalls++;
         retries++;
       }
     }
-    if (response.usage.inputTokens !== null && response.usage.inputTokens > upperInputTokens) {
+    // Reconcile a successful call before enforcing overruns. Unknown/failed calls keep their reserve.
+    const usage = response.usage;
+    const validCount = (value: number | null): value is number =>
+      value !== null && Number.isSafeInteger(value) && value >= 0;
+    const actualTokens = validCount(usage.inputTokens) && validCount(usage.outputTokens)
+      ? Math.max(usage.inputTokens + usage.outputTokens, validCount(usage.totalTokens) ? usage.totalTokens : 0)
+      : null;
+    if (actualTokens !== null) this.usedTokens += actualTokens - upperTokens;
+    let actualCost: number | null = null;
+    if (response.cost?.status === "measured" && response.cost.amountUsd !== null) {
+      actualCost = response.cost.amountUsd;
+      if (!Number.isFinite(actualCost) || actualCost < 0) throw new Error("Invalid provider cost");
+      this.measuredCostUsd = (this.measuredCostUsd ?? 0) + actualCost;
+      this.unmeasuredCalls--;
+    } else if (!preflight) {
+      actualCost = adapter.estimateCost?.(usage)?.amountUsd ?? null;
+    }
+    if (actualCost !== null && Number.isFinite(actualCost) && actualCost >= 0) {
+      this.usedCostUsd += actualCost - upperCostUsd;
+    }
+    if (validCount(usage.inputTokens) && usage.inputTokens > upperInputTokens) {
       throw new Error("Provider input usage exceeded preflight reservation");
     }
-    if (response.cost?.status === "measured" && response.cost.amountUsd !== null) {
-      this.measuredCostUsd = (this.measuredCostUsd ?? 0) + response.cost.amountUsd;
-      if (preflight && response.cost.amountUsd > upperCostUsd + 1e-9) {
-        throw new Error("Provider cost exceeded conservative preflight reservation");
-      }
+    if (actualTokens !== null && actualTokens > upperTokens) {
+      throw new Error("Provider token usage exceeded preflight reservation");
+    }
+    if (actualCost !== null && actualCost > upperCostUsd + 1e-9) {
+      throw new Error("Provider cost exceeded preflight reservation");
     }
     return response;
   }
@@ -181,8 +242,10 @@ export interface CaseResult {
   readonly split: BenchmarkCase["split"];
   readonly evaluation: EvaluationResult;
   readonly baseline: { inputTokens: number | null; outputTokens: number | null; latencyMs: number;
+    cachedInputTokens?: number | null; reasoningTokens?: number | null;
     costUsd: number | null; costEvidence: "measured" | "estimated" | "unavailable" };
   readonly candidate: { inputTokens: number | null; outputTokens: number | null; latencyMs: number;
+    cachedInputTokens?: number | null; reasoningTokens?: number | null;
     costUsd: number | null; costEvidence: "measured" | "estimated" | "unavailable" };
 }
 
@@ -195,6 +258,7 @@ export async function benchmarkCodec(options: {
   ledger: BudgetLedger;
   baselineCache: Map<string, ModelResponse>;
   maxOutputTokens?: number;
+  stopOnFailure?: boolean;
 }): Promise<CaseResult[]> {
   const results: CaseResult[] = [];
   for (const testCase of options.suite.cases.filter(
@@ -208,21 +272,25 @@ export async function benchmarkCodec(options: {
       baseline = await options.ledger.invoke(options.adapter, {
         model: (await options.adapter.getModelFingerprint()).model,
         prompt: testCase.prompt, mode: "safe", maxOutputTokens, scope: "application_request",
+        disableResponseCache: true,
       });
       options.baselineCache.set(testCase.id, baseline);
     }
-    const candidate = await options.ledger.invoke(options.adapter, {
+    const candidate = compiled.text === testCase.prompt ? baseline : await options.ledger.invoke(options.adapter, {
       model: (await options.adapter.getModelFingerprint()).model,
       prompt: compiled.text, mode: "safe", maxOutputTokens, scope: "application_request",
+      disableResponseCache: true,
     });
     const evaluation = evaluateCase(testCase, ir, compiled, baseline, candidate);
     const costFor = (response: ModelResponse) => {
-      if (response.cost?.status === "measured" && response.cost.amountUsd !== null) {
+      if (response.cost?.status === "measured" && response.cost.amountUsd !== null &&
+          Number.isFinite(response.cost.amountUsd) && response.cost.amountUsd >= 0) {
         return { costUsd: response.cost.amountUsd, costEvidence: "measured" as const };
       }
       if (options.adapter.getCapabilities().tokenCounting) {
         const estimate = options.adapter.estimateCost?.(response.usage);
-        if (estimate?.amountUsd !== null && estimate?.amountUsd !== undefined) {
+        if (estimate?.amountUsd !== null && estimate?.amountUsd !== undefined &&
+            Number.isFinite(estimate.amountUsd) && estimate.amountUsd >= 0) {
           return { costUsd: estimate.amountUsd, costEvidence: "estimated" as const };
         }
       }
@@ -235,14 +303,18 @@ export async function benchmarkCodec(options: {
       baseline: {
         inputTokens: baseline.usage.inputTokens,
         outputTokens: baseline.usage.outputTokens,
+        cachedInputTokens: baseline.usage.cachedInputTokens, reasoningTokens: baseline.usage.reasoningTokens,
         latencyMs: baseline.latencyMs, ...baseCost,
       },
       candidate: {
         inputTokens: candidate.usage.inputTokens,
         outputTokens: candidate.usage.outputTokens,
+        cachedInputTokens: candidate.usage.cachedInputTokens, reasoningTokens: candidate.usage.reasoningTokens,
         latencyMs: candidate.latencyMs, ...candidateCost,
       },
     });
+    if (options.stopOnFailure && (!evaluation.passedHardGates || baseCost.costUsd === null ||
+        candidateCost.costUsd === null || candidateCost.costUsd >= baseCost.costUsd * 0.99)) break;
   }
   return results;
 }

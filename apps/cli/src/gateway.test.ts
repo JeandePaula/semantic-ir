@@ -56,7 +56,7 @@ describe("gateway", () => {
         byScope: [{ scope: "application_request", requests: 2 }],
       });
       const dashboard = await nativeFetch(endpoint.replace("/v1/chat/completions", "/dashboard"));
-      expect(await dashboard.text()).toContain("Verified savings: unavailable");
+      expect(await dashboard.text()).toContain("Production savings: unavailable");
     } finally {
       server.closeAllConnections();
       await new Promise<void>((resolve) => server.close(() => resolve()));

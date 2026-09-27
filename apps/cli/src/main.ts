@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { analyzePrompt, TaskClassSchema, type BenchmarkSuite } from "@semantic-ir/core";
 import {
-  compilePrompt, DEFAULT_CODECS, REDUNDANT_EXTRACTION_SUITE, RuntimeRouter, SYNTHETIC_SUITE,
+  auditPrompt, compilePrompt, DEFAULT_CODECS, diagnoseReport, JSON_EXTRACTION_SUITE,
+  REDUNDANT_EXTRACTION_SUITE, RuntimeRouter, SYNTHETIC_SUITE,
   type OpenAIPrice,
 } from "@semantic-ir/engine";
 import { createGateway } from "./gateway.js";
@@ -99,6 +100,7 @@ function suite(): BenchmarkSuite {
   if (!path) return SYNTHETIC_SUITE;
   if (path === "redundant-extraction") return REDUNDANT_EXTRACTION_SUITE;
   if (path === "synthetic-exact") return SYNTHETIC_SUITE;
+  if (path === "json-extraction") return JSON_EXTRACTION_SUITE;
   const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
   return z.object({
     id: z.string(), version: z.string(),
@@ -122,9 +124,10 @@ async function main(): Promise<void> {
   try {
     if (command === "help") {
       print({ commands: [
-        "init", "configure --provider openai|openrouter --model MODEL [price options]",
+        "init", "configure --provider openai|openrouter --model MODEL [price options] [--reasoning default|none|minimal|low|medium|high]",
         "credentials import --provider openrouter < keyfile", "credentials status",
         "analyze PROMPT", "compile --codec ID PROMPT", "doctor", "profile", "codecs list|inspect",
+        "audit --prompt PROMPT | --file PATH | --suite json-extraction|redundant-extraction|PATH (local, no provider calls)",
         "invoke --allow-spend --max-output-tokens N --prompt PROMPT",
         "calibrate|benchmark|optimize --model MODEL --allow-spend --max-requests N --max-tokens N --max-cost-usd N --max-duration-ms N [--suite redundant-extraction] [--max-output-tokens N]",
         "calibration report [--model MODEL]", "metrics",
@@ -142,6 +145,11 @@ async function main(): Promise<void> {
     if (command === "configure") {
       const selectedModel = required("model");
       const selectedProvider = z.enum(["openai", "openrouter"]).parse(option("provider") ?? "openai");
+      const reasoning = option("reasoning") === undefined ? undefined :
+        z.enum(["default", "none", "minimal", "low", "medium", "high"]).parse(required("reasoning"));
+      if (selectedProvider !== "openrouter" && reasoning !== undefined && reasoning !== "default") {
+        throw new Error("--reasoning currently requires --provider openrouter");
+      }
       const hasPriceOption = ["price-version", "input-price", "cached-price", "output-price"]
         .some((name) => option(name) !== undefined);
       const price: OpenAIPrice | null = hasPriceOption ? {
@@ -153,7 +161,10 @@ async function main(): Promise<void> {
       store.setSetting("defaultModel", selectedModel);
       store.setSetting("defaultProvider", selectedProvider);
       if (price) store.setSetting("price:" + selectedProvider + ":" + selectedModel, price);
-      print({ provider: selectedProvider, model: selectedModel, price, apiKeyStoredInDatabase: false });
+      if (reasoning !== undefined) store.setSetting("reasoning:" + selectedProvider + ":" + selectedModel, reasoning);
+      print({ provider: selectedProvider, model: selectedModel, price,
+        reasoning: store.getSetting("reasoning:" + selectedProvider + ":" + selectedModel) ?? "default",
+        apiKeyStoredInDatabase: false });
       return;
     }
     if (command === "credentials") {
@@ -173,6 +184,19 @@ async function main(): Promise<void> {
     if (command === "analyze") {
       const prompt = argv.slice(1).join(" ");
       print(analyzePrompt(prompt));
+      return;
+    }
+    if (command === "audit") {
+      const sources = ["prompt", "file", "suite"].filter(has);
+      if (sources.length !== 1) throw new Error("Use exactly one of --prompt, --file, or --suite");
+      if (has("suite")) {
+        const selected = suite();
+        print({ suite: selected.id, providerCalls: 0, cases: selected.cases
+          .filter((item) => item.oracleId === "exact")
+          .map((item) => ({ caseId: item.id, ...auditPrompt(item.prompt) })) });
+      } else {
+        print(auditPrompt(has("file") ? readFileSync(required("file"), "utf8") : required("prompt")));
+      }
       return;
     }
     if (command === "compile") {
@@ -232,7 +256,8 @@ async function main(): Promise<void> {
     if (command === "calibration" && argv[1] === "report") {
       const selectedModel = model(store);
       if (!selectedModel) throw new Error("Set --model or run configure");
-      print(store.getLatestCalibrationReport(providerFor(store), selectedModel));
+      const report = store.getLatestCalibrationReport(providerFor(store), selectedModel);
+      print(report ? { ...report, diagnostics: diagnoseReport(report) } : null);
       return;
     }
     if (command === "calibrate" || command === "benchmark" || command === "optimize") {

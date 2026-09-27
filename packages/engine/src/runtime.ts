@@ -21,7 +21,8 @@ export function classifyRisk(ir: SemanticIR): RuntimeDecision["risk"] {
     return "high";
   }
   if (ir.constraints.length > 3 || text.length > 20_000) return "high";
-  const literalLength = ir.literals.reduce((total, item) => total + item.text.length, 0);
+  const literalLength = ir.literals.reduce((total, item) => total +
+    (item.kind === "json" && ["extraction", "structured_output"].includes(ir.intent.task) ? 0 : item.text.length), 0);
   if (literalLength / text.length > 0.5) return "high";
   if (ir.constraints.length || literalLength) return "medium";
   return "low";
@@ -52,6 +53,7 @@ export class RuntimeRouter {
     try {
       const compiled = compilePrompt(ir, codec);
       if (compiled.text === prompt) return fallback("codec_no_change");
+      if (Buffer.byteLength(compiled.text) >= Buffer.byteLength(prompt)) return fallback("codec_does_not_reduce_input");
       return {
         decision: {
           ...base, mode: "compiled", codecVersion: compiled.codecId + "@" + compiled.codecVersion,
@@ -75,18 +77,10 @@ export class RuntimeRouter {
       scope: options.scope ?? "application_request",
       ...(options.maxOutputTokens === undefined ? {} : { maxOutputTokens: options.maxOutputTokens }),
     });
-    let response: ModelResponse;
-    let decision = route.decision;
-    try {
-      response = await this.adapter.invoke(makeRequest(route.compiledText));
-    } catch (error) {
-      if (decision.mode === "original") throw error;
-      decision = {
-        ...decision, mode: "original", codecVersion: null,
-        fallbackReason: "compiled_provider_call_failed",
-      };
-      response = await this.adapter.invoke(makeRequest(prompt));
-    }
+    // A transport failure does not establish that the codec failed, nor that the
+    // provider did not charge. Do not silently bill a second inference as a retry.
+    const response = await this.adapter.invoke(makeRequest(route.compiledText));
+    const decision = route.decision;
     const cost = response.cost ?? this.adapter.estimateCost?.(response.usage) ?? null;
     this.store.recordMetric({
       requestId: randomUUID(), scope: options.scope ?? "application_request",

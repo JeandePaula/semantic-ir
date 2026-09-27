@@ -1,16 +1,58 @@
 # Semantic IR
 
-Camada local para analisar prompts, testar codecs declarativos e encaminhar chamadas controladas a LLMs. O objetivo comercial é reduzir **custo por tarefa bem-sucedida**, medido contra o prompt original. Sem evidência de sucesso e custo, o runtime usa o original e não anuncia economia.
+Local prompt analysis, conservative compression, and cost-aware LLM experiments. Semantic IR aims to reduce **cost per successful task**, measured against the original prompt. It keeps the original request when a codec lacks a stable profile or the runtime's risk checks reject the transformation.
 
-## Estado do produto
+[Português](README.pt-BR.md) · [Architecture](docs/architecture.md) · [Host integrations](docs/integrations.md) · [Detailed findings](docs/improvements.md)
 
-O MVP executável inclui schema `sir/0.1`, detecção conservadora de dados literais e constraints, Codec DSL sem código dinâmico, adapters OpenAI e OpenRouter, benchmark com orçamento para os dois providers, otimizador evolutivo, profiles SQLite, fallback, servidor MCP, gateway local, CLI e pacotes de plugin para Codex, Claude Code e Google Antigravity.
+## Measured results
 
-As suites embutidas pontuam casos sintéticos de **extração exata**: quatro na suite básica e seis na suite de contexto repetido. Outras categorias aparecem como probes sem oracle e não são usadas para promover codecs. O repositório não inclui resultados de calibração de um modelo real. Um plugin instalado também não tem acesso comprovado ao prompt primário do Codex ou Claude Code antes da inferência; o scope `host_primary_prompt` é `unavailable`. A otimização controlada é de chamadas da aplicação ou downstream.
+These are small experiments with **OpenRouter / `z-ai/glm-5.3-flash`**, run on September 26, 2026. They are not a claim of universal savings or statistical equivalence.
 
-## Começar pelo repositório
+| Experiment | Original | Compressed | Observed reduction | Quality result |
+| --- | ---: | ---: | ---: | --- |
+| Local JSON payload comparison, six cases | 18,636 bytes | 7,185 bytes | **61.45% fewer bytes** | Structural preservation; no model calls |
+| Simple JSON extraction, two held-out pairs | $0.00010912 | $0.00007260 | **33.47% lower measured cost** | Both versions correct in both pairs |
+| New simple extraction input, one additional pair | $0.00006408 | $0.00004492 | **29.90% lower measured cost** | Both correct; zero cached input on both sides |
+| Complex allocation task, two returned responses per version | $0.00623324 | $0.00471438 | **24.37% lower measured cost** | **0/2 fully correct on each side — failed quality gate** |
 
-Use Node.js 24 ou superior, npm e um terminal Bash (Linux, macOS ou WSL). `node:sqlite` ainda emite aviso experimental no Node 24. Estes comandos não precisam de chave de API nem fazem chamadas pagas:
+The simple extraction experiment passed all six calibration, validation, and holdout pairs. It promoted `json_compact` for that model's extraction profile. A new input then confirmed `decision.mode: compiled` and the correct response. The held-out candidates each used 256 cached input tokens while their baselines used none, so the 33.47% result includes that advantage. The additional pair had no cached input on either side.
+
+The simple experiment used 14 calls and cost **$0.000618** in total. Its calibration alone cost $0.000509, with a projected break-even of 28 comparable requests. Recovering all 14 calls would require about 34 requests at the observed holdout savings. These are projections, not realized net production savings.
+
+### The complex test did not establish preserved quality
+
+The complex prompt contains 19 order events, three warehouses, revision selection, priority ordering, inventory reservations, discounts, contribution thresholds, cancellation rules, large string identifiers, and an instruction-like customer note that must be ignored. A deterministic reference answer was computed before any model calls.
+
+- Input decreased from **4,248 to 2,886 provider-reported tokens per call** (32.06%).
+- The first original response used a discount of 3,263 cents instead of 326 and selected an incorrect warehouse. The second original response reached the 6,144-token output limit and returned incomplete JSON.
+- Both compressed responses returned valid JSON but made ordering, allocation, total, or inventory errors. Valid JSON did not mean a correct answer.
+- Three repetitions per version were planned. The fifth attempt, an original request, returned no usable text and stopped the run. Only the two returned responses per version are used in the comparison above; one original response was truncated.
+- The runtime independently classified this prompt as high risk and selected the original. The direct experiment did not promote a broader profile or bypass that gate in production.
+
+**Lower cost on failed tasks is not successful optimization.** This result limits the supported claim to the tested simple extraction workload. General reasoning, arithmetic, and constraint-heavy tasks remain unverified.
+
+The complex test recorded **$0.01094762** in measured charges for four returned responses. Billing for the failed fifth call is unavailable; its **$0.00442536 estimated reservation** was retained, giving $0.01537298 accounted for this test. Across both experiments, 19 requests were attempted, $0.01156562 was measured, and $0.01599098 was accounted including the unresolved reservation, within the authorized local $0.02 envelope. This local estimate is not a provider-side billing guarantee.
+
+### Evidence
+
+- [Offline byte comparison](docs/reports/local-compression.json)
+- [Simple extraction calibration and holdout](docs/reports/openrouter-json-calibration.json)
+- [New input: compiled runtime and uncached comparison](docs/reports/openrouter-json-runtime.json)
+- [Complex experiment report](docs/experiments/complex-json/README.md), [original prompt](docs/experiments/complex-json/prompt.txt), [compressed prompt](docs/experiments/complex-json/prompt.compact.txt), [reference answer](docs/experiments/complex-json/expected.json), and [raw results](docs/experiments/complex-json/results.json)
+
+## What changed
+
+- **Audit before spending.** Local screening rejects larger prompts, reductions below 128 bytes, and candidates that produce identical text. It reports bytes without presenting them as token or dollar savings.
+- **Lexical JSON compression.** `json_compact` removes JSON whitespace outside strings while preserving number spellings, escapes, duplicate keys, and key order. It validates JSON grammar but does not parse and reserialize the data. Formatting-sensitive requests are left unchanged.
+- **Verifiable transformations.** A compacted JSON literal is accepted only when replaying the complete deterministic transformation reproduces the submitted text. This preserves data, not a guarantee of identical model behavior.
+- **Cost-aware selection.** Candidates must preserve task success and reduce total cost by at least 1% in every scored case across calibration, validation, and holdout. A failed candidate stops early. Network latency no longer vetoes an otherwise correct, cheaper candidate.
+- **Reconciled budgets.** Successful responses replace conservative reservations with reported usage and cost. Failed calls with unknown billing retain their reservations.
+- **Honest diagnostics.** Reports include input, output, reasoning, cached input, candidate rejection reasons, and projected calibration break-even.
+- **Controlled inference policy.** OpenRouter reasoning settings participate in the model fingerprint. Response caching is disabled for calibration, rather than for every priced runtime call. Provider failures do not silently trigger a second paid inference.
+
+## Quick start: no API spending
+
+Use Node.js 24 or newer, npm, and Bash on Linux, macOS, or WSL. `node:sqlite` emits an experimental warning on Node 24.
 
 ```sh
 git clone https://github.com/JeandePaula/semantic-ir.git
@@ -19,95 +61,100 @@ npm ci
 npm run build
 node apps/cli/bundle/main.js init
 node apps/cli/bundle/main.js doctor
-node apps/cli/bundle/main.js integrations status
-node apps/cli/bundle/main.js analyze "Nunca altere 7500 nem /api/v1/users/{id}."
+node apps/cli/bundle/main.js audit --suite json-extraction
+node apps/cli/bundle/main.js audit --file path/to/prompt.txt
+npm run audit:savings
 ```
 
-`npm run build` gera JSON Schemas, bundle da CLI e pacotes em `apps/cli/assets/integrations/`. Para confirmar a integração com um modelo de verdade, siga a seção de chave de API e faça a chamada real abaixo.
+The build exports JSON schemas, bundles the CLI, and produces integration packages in `apps/cli/assets/integrations/`. Local analysis and auditing do not need credentials. The MCP equivalent of `audit` is `audit_prompt`.
 
-## Testar com sua própria chave de API
+## Configure a provider
 
-O projeto aceita OpenRouter e OpenAI. A instalação não pede uma chave; análise local, testes e ferramentas MCP de leitura funcionam sem ela. Para usar OpenRouter, importe sua chave pelo prompt oculto no terminal e configure o modelo:
+OpenRouter and OpenAI are supported. Import your own API key using the hidden terminal prompt:
 
 ```sh
 node apps/cli/bundle/main.js credentials import --provider openrouter
 node apps/cli/bundle/main.js configure --provider openrouter --model z-ai/glm-5.3-flash
 node apps/cli/bundle/main.js doctor
-node apps/cli/bundle/main.js invoke --allow-spend --max-output-tokens 256 --prompt "Responda apenas OK."
 ```
 
-O último comando envia uma requisição paga para sua conta. Você também pode usar `OPENROUTER_API_KEY` como variável de ambiente. Para OpenAI, troque o provider para `openai`, importe sua chave e escolha um modelo disponível na sua conta. As chaves importadas ficam em `~/.config/semantic-ir/` com permissão `0600`, fora do repositório; não as coloque em arquivos versionados. `doctor` mostra se a chave está configurada, sem imprimi-la. O adapter OpenRouter registra os tokens e o custo medidos pelo provider.
+You can also use `OPENROUTER_API_KEY` or `OPENAI_API_KEY`. Imported credentials are kept outside the repository under `~/.config/semantic-ir/` with mode `0600`. `doctor` reports whether a key is configured without printing it.
 
-## Calibrar e medir uma otimização real
+For OpenAI, select `--provider openai`, choose a model available to your account, and supply current account prices with `--input-price`, `--cached-price`, `--output-price`, and `--price-version`. Prices are expressed in USD per million tokens.
 
-O OpenRouter pode avaliar candidatos sem uma pré-contagem oficial: antes de cada chamada, o Semantic IR reserva um teto **conservador e estimado** a partir do tamanho em bytes, limite de saída e preço consultado no catálogo do OpenRouter. A requisição também limita o preço por token do provider. Depois de cada resposta, o sistema verifica tokens e custo efetivamente cobrados e interrompe a execução se o teto estimado for ultrapassado. **O limite local em USD não é uma garantia absoluta de cobrança**; para um teto externo, configure um limite de gasto na chave OpenRouter.
+## Paid calibration
 
-Uma suite fechada de extração com contexto longo e repetido permite comparar o prompt original a um codec que remove apenas linhas idênticas do bloco `CONTEXT`/`CONTEXTO`, quando a redução chega a 2 KiB. Execute somente se aceitar as chamadas pagas:
+The following command makes paid calls and can promote a profile:
 
 ```sh
-semantic-ir calibrate --model z-ai/glm-5.3-flash --task extraction \
-  --suite redundant-extraction --allow-spend \
-  --max-requests 36 --max-tokens 100000 --max-cost-usd 0.05 \
-  --max-duration-ms 900000 --max-output-tokens 256
-semantic-ir calibration report
-semantic-ir profile
+node apps/cli/bundle/main.js calibrate \
+  --model z-ai/glm-5.3-flash --task extraction --suite json-extraction \
+  --allow-spend --max-requests 24 --max-tokens 100000 \
+  --max-cost-usd 0.02 --max-duration-ms 240000 --max-output-tokens 256
+node apps/cli/bundle/main.js calibration report
+node apps/cli/bundle/main.js profile
 ```
 
-O relatório separa custo medido, reserva de orçamento e economia observada **somente nos casos holdout**. Um codec só é promovido se o original e o candidato acertarem todas as respostas exatas e o candidato custar menos em cada caso de calibração, validação e holdout. Se `promoted` for `false`, o runtime continua usando o prompt original. Mesmo quando promovido, a evidência não implica economia em outros tipos de tarefa. Para sua aplicação, forneça uma suite JSON própria com casos e respostas esperadas em cada split, usando `--suite arquivo.json`.
+Each execution has its own budget and incurs new charges. `benchmark` evaluates without promoting. `json-extraction` is the default suite; `redundant-extraction`, `synthetic-exact`, and custom suite JSON files are also accepted. Custom suites need scored cases with distinct IDs and prompts across calibration, validation, and holdout.
 
-Se `promoted` for `true`, experimente uma entrada nova da mesma classe. Esta chamada também é paga; `decision.mode` deve ser `compiled` e a resposta deve ser `MAGENTA`:
+OpenRouter uses a conservative byte-based preflight envelope, a price ceiling, and provider-reported usage/cost reconciliation. The local USD limit is estimated; use a provider-side key spending limit for an external cap. OpenAI uses provider token counting and your configured prices. Missing evidence stays unavailable.
+
+| Report field | Meaning |
+| --- | --- |
+| `promoted` | Whether this execution activated a profile |
+| `holdoutEvidence` | Cost and success evidence only for the held-out sample |
+| `screenedCandidates` | Candidates skipped before inference |
+| `diagnostics` | Output growth, insufficient savings, and related observations |
+| `economics.breakEvenRequests` | Projected requests needed to recover the calibration cost |
+| `reservations` | Cumulative preflight ceilings, not actual spending |
+| `run.usedCostUsd` | Reconciled costs plus unresolved reservations |
+
+For compatible OpenRouter models, reasoning can be configured explicitly:
 
 ```sh
-FACT='The launch label color is MAGENTA and the same label is used in every approved view.'
-PROMPT="$(printf 'Extract the launch label color from CONTEXT. Reply with the uppercase color word and no other text.\nCONTEXT:\n'; for i in {1..32}; do printf '%s\n' "$FACT"; done; printf 'QUESTION:\nWhat is the launch label color?')"
-semantic-ir invoke --allow-spend --max-output-tokens 256 --prompt "$PROMPT"
+node apps/cli/bundle/main.js configure --provider openrouter --model YOUR_MODEL --reasoning none
 ```
 
-O perfil da calibração é específico para `extraction` e para o fingerprint do modelo. Um pedido como “Responda apenas OK.” pode continuar em modo `original` por pertencer a outra classe.
+Values are `default`, `none`, `minimal`, `low`, `medium`, and `high`; model support varies. The default preserves provider behavior. The same setting applies to the original, candidate, and runtime, and changing it requires recalibration. Hiding reasoning does not avoid its cost; see the [OpenRouter reasoning documentation](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens).
 
-## Instalar a CLI e os plugins
+## CLI, MCP, and host plugins
 
 ```sh
 npm pack --workspace apps/cli
 npm install -g ./semantic-ir-cli-0.3.1.tgz
-semantic-ir doctor
 semantic-ir integrations build --out ./dist
 semantic-ir install codex
 semantic-ir install claude
 semantic-ir install antigravity
 ```
 
-Os três comandos `install` mostram os passos de instalação em cada host; siga o comando impresso para instalar o plugin. Veja o [passo a passo para Codex, Claude Code, Antigravity, WSL e ChatGPT](docs/integrations.md). A CLI precisa estar no `PATH` do mesmo ambiente em que o host executa o MCP. Se o host roda no Windows e a CLI/chave ficam no WSL, gere os pacotes de ponte com `node apps/cli/bundle/main.js integrations build --out /mnt/c/Users/SEU_USUARIO/.codex/semantic-ir-wsl --wsl-distro Ubuntu-24.04`. Os profiles ficam em `~/.semantic-ir/semantic-ir.sqlite`, ou no caminho definido por `SEMANTIC_IR_DB`, e sobrevivem a atualizações do plugin.
+The `install` commands print the host-specific steps; follow those instructions. See the [integration guide](docs/integrations.md) for Codex, Claude Code, Antigravity, WSL, and ChatGPT. The CLI must be available in the environment that launches the MCP server. A Windows host can use the WSL bridge generated by `integrations build --wsl-distro Ubuntu-24.04`.
 
-## Verificar o plugin com uma chamada real
+MCP provides local analysis, audit, compilation, validation, profiles, metrics, routing explanations, and explicitly authorized downstream model calls. Profiles and reports live in `~/.semantic-ir/semantic-ir.sqlite`, overridable with `SEMANTIC_IR_DB`.
 
-Depois de configurar sua própria chave do OpenRouter e instalar o plugin, abra **uma nova sessão** no host e peça: “Use Semantic IR `doctor` e depois `invoke_prompt` com `allowSpend: true`, `maxOutputTokens: 32` e o prompt `Responda apenas OK.`. Mostre a resposta, o custo e `decision.mode`.” Isso chama o modelo `z-ai/glm-5.3-flash` configurado acima. Se `decision.mode` for `original` e `fallbackReason` for `no_stable_profile`, o plugin funcionou, mas ainda não há otimização comprovada para esse modelo. A instalação não troca automaticamente o modelo principal do agente pelo OpenRouter.
+**Installing a plugin does not intercept or reduce the host agent's primary inference.** Optimization applies to application requests or downstream calls explicitly routed through Semantic IR. The `host_primary_prompt` scope remains unavailable.
 
-## Gateway local
+## Local gateway
 
 ```sh
 semantic-ir proxy --port 8787
-```
-
-Em outro terminal:
-
-```sh
 curl http://127.0.0.1:8787/health
 ```
 
-O gateway usa o provider e modelo configurados acima e escuta somente em `127.0.0.1`. Aceita `POST /v1/chat/completions` com um único texto de usuário; recursos Chat Completions não suportados são encaminhados ao provider sem compilação. `GET /metrics` e `/dashboard` mostram contagens observadas e distinguem economia verificada como indisponível. Opcionalmente defina `SEMANTIC_IR_GATEWAY_KEY` para exigir `Authorization: Bearer ...`. O gateway não é um serviço público multiusuário.
+The gateway binds to localhost and supports a restricted, single-user-text form of `POST /v1/chat/completions`. Unsupported chat features are forwarded without compilation. `/metrics` and `/dashboard` distinguish observed costs and holdout evidence from unverified production savings. Set `SEMANTIC_IR_GATEWAY_KEY` to require a bearer token. This is a local, single-user service.
 
-## Calibração paga, opcional
-
-Para testar a calibração com OpenAI, importe sua chave com `semantic-ir credentials import --provider openai` e configure preços atuais da sua conta em USD por milhão de tokens. Os valores abaixo são **marcadores**, não preços atuais:
+## Verification and scope
 
 ```sh
-semantic-ir configure --model SEU_MODELO \
-  --input-price PRECO --cached-price PRECO --output-price PRECO --price-version DATA_OU_TABELA
-semantic-ir benchmark --model SEU_MODELO --task extraction --allow-spend \
-  --max-requests 40 --max-tokens 8000 --max-cost-usd 0.10 --max-duration-ms 120000
+npm run check
+npm run build
+npm run audit:savings
+node docs/experiments/complex-json/prepare.mjs
+node docs/experiments/complex-json/summarize.mjs
 ```
 
-`benchmark` não promove profile; `calibrate` ou `optimize` só promovem se calibration, validation e holdout passarem. Os limites monetários são calculados com os preços fornecidos pelo usuário e a contagem do provider; confira esses preços antes de autorizar gasto. Sem chave, preço, oracle ou evidência suficiente, o sistema não promove um codec. Para outras tarefas, forneça uma suite JSON com casos pontuados em cada split (`--suite caminho.json`).
+These checks are local and do not make paid calls. The complex experiment includes its full prompt, reference solver, evaluator, raw responses, and budget accounting. Its paid runner requires `--allow-spend` and refuses to overwrite existing results.
 
-Veja [arquitetura](docs/architecture.md), [integrações](docs/integrations.md), [testes e publicação](docs/testing-and-release.md), [decisão sobre hosts](docs/decisions/0002-host-integrations.md) e [status por fase](docs/phases.md).
+The repository covers conservative analysis, literal detection, declarative codecs, OpenAI/OpenRouter adapters, SQLite profiles, MCP, CLI, and a local gateway. Open-ended quality evaluators, robust evidence for coding/reasoning, transparent host-primary optimization, and multi-user production deployment remain out of scope.
+
+See [testing and release](docs/testing-and-release.md), [data model](docs/data-model.md), and [host integration decision](docs/decisions/0002-host-integrations.md). License: [MIT](LICENSE).

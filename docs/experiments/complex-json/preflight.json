@@ -1,0 +1,7 @@
+{
+  "task": "extraction",
+  "constraints": 18,
+  "originalBytes": 16789,
+  "compiledBytes": 9416,
+  "deterministicChecksPassed": true
+}

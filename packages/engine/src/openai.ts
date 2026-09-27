@@ -11,6 +11,8 @@ export interface OpenAIPrice {
   readonly outputUsdPerMillion: number;
 }
 
+export type ReasoningEffort = "default" | "none" | "minimal" | "low" | "medium" | "high";
+
 interface ResponseJson {
   id?: string;
   model?: string;
@@ -44,6 +46,7 @@ export class OpenAIAdapter implements ModelAdapter {
   private readonly baseUrl: string;
   private readonly apiKey: string;
   private readonly price: OpenAIPrice | null;
+  private readonly reasoningEffort: ReasoningEffort;
   readonly provider: "openai" | "openrouter";
 
   constructor(readonly model: string, options: {
@@ -51,6 +54,7 @@ export class OpenAIAdapter implements ModelAdapter {
     baseUrl?: string;
     price?: OpenAIPrice | null;
     provider?: "openai" | "openrouter";
+    reasoningEffort?: ReasoningEffort;
   } = {}) {
     this.provider = options.provider ?? "openai";
     this.apiKey = options.apiKey ?? (this.provider === "openrouter"
@@ -58,16 +62,21 @@ export class OpenAIAdapter implements ModelAdapter {
     this.baseUrl = (options.baseUrl ?? (this.provider === "openrouter"
       ? "https://openrouter.ai/api" : "https://api.openai.com")).replace(/\/$/, "");
     this.price = options.price ?? null;
+    this.reasoningEffort = options.reasoningEffort ?? "default";
+    if (this.provider !== "openrouter" && this.reasoningEffort !== "default") {
+      throw new Error("Reasoning configuration currently requires OpenRouter");
+    }
     this.resolvedModel = model;
   }
 
-  private async request(path: string, body: object, timeoutMs = 60_000): Promise<Response> {
+  private async request(path: string, body: object, timeoutMs = 60_000,
+    disableResponseCache = false): Promise<Response> {
     if (!this.apiKey) throw new Error(this.provider.toUpperCase() + " API key is required for provider calls");
     const response = await fetch(this.baseUrl + path, {
       method: "POST",
       headers: {
         authorization: "Bearer " + this.apiKey, "content-type": "application/json",
-        ...(this.provider === "openrouter" && this.price ? { "X-OpenRouter-Cache": "false" } : {}),
+        ...(this.provider === "openrouter" && disableResponseCache ? { "X-OpenRouter-Cache": "false" } : {}),
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
@@ -151,12 +160,13 @@ export class OpenAIAdapter implements ModelAdapter {
         model: request.model,
         messages: [{ role: "user", content: request.prompt }],
         usage: { include: true },
+        ...(this.reasoningEffort === "default" ? {} : { reasoning: { effort: this.reasoningEffort } }),
         ...(this.price ? { provider: { max_price: {
           prompt: this.price.inputUsdPerMillion,
           completion: this.price.outputUsdPerMillion,
         } } } : {}),
         ...(request.maxOutputTokens === undefined ? {} : { max_tokens: request.maxOutputTokens }),
-      }, request.timeoutMs);
+      }, request.timeoutMs, request.disableResponseCache);
       const body = await response.json() as ChatResponseJson;
       const content = body.choices?.[0]?.message?.content;
       if (typeof content !== "string") throw new Error("openrouter response did not contain text");
@@ -251,6 +261,7 @@ export class OpenAIAdapter implements ModelAdapter {
       capabilities, fingerprintSha256: sha256(JSON.stringify({
         provider: this.provider, model: this.model, snapshot: this.resolvedModel, capabilities,
         price: this.price,
+        ...(this.reasoningEffort === "default" ? {} : { reasoningEffort: this.reasoningEffort }),
       })),
       observedAt: new Date().toISOString(),
     };

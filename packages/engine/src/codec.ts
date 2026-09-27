@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { sha256, type SemanticIR } from "@semantic-ir/semantic-ir";
 import type { CodecDefinition, CompiledPrompt } from "@semantic-ir/core";
+import { compactJsonPrompt } from "./json.js";
 
 const token = z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,15}$/);
 const separator = z.string().min(1).max(3).regex(/^[|;:=~,. ]+$/);
@@ -8,7 +9,7 @@ const separator = z.string().min(1).max(3).regex(/^[|;:=~,. ]+$/);
 export const CodecDefinitionSchema = z.strictObject({
   schemaVersion: z.literal("codec/0.1"),
   id: token,
-  strategy: z.enum(["identity", "compact_spacing", "tagged", "dedupe_context_lines"]),
+  strategy: z.enum(["identity", "compact_spacing", "tagged", "dedupe_context_lines", "compact_json"]),
   aliases: z.record(token, token),
   separator,
   assignment: separator,
@@ -43,6 +44,7 @@ export const DEFAULT_CODECS: readonly CodecDefinition[] = [
   definition("context_dedupe", "dedupe_context_lines"),
   definition("tagged_semicolon", "tagged", ";"),
   definition("tagged_pipe", "tagged", "|"),
+  definition("json_compact", "compact_json"),
 ];
 
 function dedupeContextLines(ir: SemanticIR): string {
@@ -113,7 +115,10 @@ function occurrences(haystack: string, needle: string): number {
 export function validateCompiled(ir: SemanticIR, compiled: CompiledPrompt): string[] {
   const failures: string[] = [];
   if (compiled.sourceSha256 !== ir.source.sha256) failures.push("source_checksum");
-  const unique = new Set(ir.literals.map((literal) => literal.text));
+  const jsonProof = compiled.transformation === "json_whitespace" && compiled.text === compactJsonPrompt(ir);
+  if (compiled.transformation && !jsonProof) failures.push("transformation_mismatch");
+  const unique = new Set(ir.literals.filter((literal) => !(jsonProof && literal.kind === "json"))
+    .map((literal) => literal.text));
   for (const text of unique) {
     if (occurrences(compiled.text, text) < occurrences(ir.source.text, text)) {
       failures.push("literal_corruption:" + sha256(text).slice(0, 12));
@@ -138,6 +143,9 @@ export function compilePrompt(ir: SemanticIR, input: CodecDefinition): CompiledP
     case "dedupe_context_lines":
       text = dedupeContextLines(ir);
       break;
+    case "compact_json":
+      text = compactJsonPrompt(ir);
+      break;
     case "tagged": {
       const aliases = codec.aliases;
       const chunks: string[] = [];
@@ -157,6 +165,7 @@ export function compilePrompt(ir: SemanticIR, input: CodecDefinition): CompiledP
   const compiled: CompiledPrompt = {
     text, codecId: codec.id, codecVersion: "0.1.0",
     sourceSha256: ir.source.sha256, literalIds: ir.literals.map((item) => item.id),
+    ...(codec.strategy === "compact_json" ? { transformation: "json_whitespace" as const } : {}),
   };
   const failures = validateCompiled(ir, compiled);
   if (failures.length) throw new Error("Codec rejected: " + failures.join(", "));

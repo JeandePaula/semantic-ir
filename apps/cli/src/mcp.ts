@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { analyzePrompt, sha256 } from "@semantic-ir/core";
 import type { TaskClass } from "@semantic-ir/core";
-import { compilePrompt, DEFAULT_CODECS, REDUNDANT_EXTRACTION_SUITE,
+import { auditPrompt, compilePrompt, DEFAULT_CODECS, diagnoseReport, JSON_EXTRACTION_SUITE, REDUNDANT_EXTRACTION_SUITE,
   RuntimeRouter, SYNTHETIC_SUITE, validateCompiled } from "@semantic-ir/engine";
 import { adapterFor, openStore, providerFor, providerKey, runCalibration } from "./service.js";
 
@@ -14,6 +14,11 @@ const result = (value: unknown) => ({
 export async function startMcpServer(): Promise<void> {
   const store = openStore();
   const server = new McpServer({ name: "semantic-ir", version: "0.3.1" });
+  server.registerTool("audit_prompt", {
+    description: "Compare local compression candidates before spending. Reports bytes, never unmeasured token or cost savings.",
+    inputSchema: { prompt: z.string().min(1).max(1_000_000) },
+    annotations: { readOnlyHint: true },
+  }, ({ prompt }) => result(auditPrompt(prompt)));
   server.registerTool("analyze_prompt", {
     description: "Return a source-preserving Semantic IR with partial annotations. No provider call.",
     inputSchema: { prompt: z.string().min(1) },
@@ -32,13 +37,15 @@ export async function startMcpServer(): Promise<void> {
 
   server.registerTool("validate_semantics", {
     description: "Run deterministic literal and constraint checks; open-ended semantic equivalence remains unavailable.",
-    inputSchema: { prompt: z.string().min(1), compiledPrompt: z.string() },
+    inputSchema: { prompt: z.string().min(1), compiledPrompt: z.string(),
+      transformation: z.literal("json_whitespace").optional() },
     annotations: { readOnlyHint: true },
-  }, ({ prompt, compiledPrompt }) => {
+  }, ({ prompt, compiledPrompt, transformation }) => {
     const ir = analyzePrompt(prompt);
     const failures = validateCompiled(ir, {
       text: compiledPrompt, codecId: "external", codecVersion: "unknown",
       sourceSha256: sha256(prompt), literalIds: ir.literals.map((item) => item.id),
+      ...(transformation ? { transformation } : {}),
     });
     return result({ deterministicChecksPassed: failures.length === 0, failures,
       behavioralEquivalence: "unavailable" });
@@ -68,7 +75,8 @@ export async function startMcpServer(): Promise<void> {
   }, ({ model }) => {
     const selectedModel = model ?? store.getSetting<string>("defaultModel");
     if (!selectedModel) throw new Error("Configure a model first");
-    return result(store.getLatestCalibrationReport(providerFor(store), selectedModel));
+    const report = store.getLatestCalibrationReport(providerFor(store), selectedModel);
+    return result(report ? { ...report, diagnostics: diagnoseReport(report) } : null);
   });
 
   server.registerTool("get_runtime_decision", {
@@ -130,7 +138,7 @@ export async function startMcpServer(): Promise<void> {
       model: z.string().min(1), allowSpend: z.literal(true),
       maxRequests: z.number().int().positive(), maxTokens: z.number().int().positive(),
       maxCostUsd: z.number().positive(), maxDurationMs: z.number().int().positive(),
-      suite: z.enum(["redundant-extraction", "synthetic-exact"]).optional(),
+      suite: z.enum(["json-extraction", "redundant-extraction", "synthetic-exact"]).optional(),
       maxOutputTokens: z.number().int().positive().optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
@@ -139,7 +147,8 @@ export async function startMcpServer(): Promise<void> {
     result(await runCalibration({
       store, model, allowSpend, promote: true,
       budget: { maxRequests, maxTokens, maxCostUsd, maxDurationMs },
-      ...(suite ? { suite: suite === "redundant-extraction" ? REDUNDANT_EXTRACTION_SUITE : SYNTHETIC_SUITE } : {}),
+      ...(suite ? { suite: suite === "redundant-extraction" ? REDUNDANT_EXTRACTION_SUITE :
+        suite === "json-extraction" ? JSON_EXTRACTION_SUITE : SYNTHETIC_SUITE } : {}),
       ...(maxOutputTokens ? { maxOutputTokens } : {}),
     })));
 
@@ -149,7 +158,7 @@ export async function startMcpServer(): Promise<void> {
       model: z.string().min(1), allowSpend: z.literal(true),
       maxRequests: z.number().int().positive(), maxTokens: z.number().int().positive(),
       maxCostUsd: z.number().positive(), maxDurationMs: z.number().int().positive(),
-      suite: z.enum(["redundant-extraction", "synthetic-exact"]).optional(),
+      suite: z.enum(["json-extraction", "redundant-extraction", "synthetic-exact"]).optional(),
       maxOutputTokens: z.number().int().positive().optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
@@ -158,7 +167,8 @@ export async function startMcpServer(): Promise<void> {
     result(await runCalibration({
       store, model, allowSpend, promote: false,
       budget: { maxRequests, maxTokens, maxCostUsd, maxDurationMs },
-      ...(suite ? { suite: suite === "redundant-extraction" ? REDUNDANT_EXTRACTION_SUITE : SYNTHETIC_SUITE } : {}),
+      ...(suite ? { suite: suite === "redundant-extraction" ? REDUNDANT_EXTRACTION_SUITE :
+        suite === "json-extraction" ? JSON_EXTRACTION_SUITE : SYNTHETIC_SUITE } : {}),
       ...(maxOutputTokens ? { maxOutputTokens } : {}),
     })));
 

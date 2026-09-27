@@ -20,6 +20,18 @@ describe("MCP stdio integration", () => {
       const tools = await client.listTools();
       expect(tools.tools.map((item) => item.name)).toContain("analyze_prompt");
       expect(tools.tools.map((item) => item.name)).toContain("calibrate_model");
+      expect(tools.tools.map((item) => item.name)).toContain("audit_prompt");
+      const audit = await client.callTool({ name: "audit_prompt", arguments: { prompt: "Extract BLUE." } });
+      const auditText = audit.content[0];
+      if (auditText?.type !== "text") throw new Error("Expected audit response");
+      expect(JSON.parse(auditText.text)).toMatchObject({ providerCalls: 0, recommendedCodecId: null });
+      const prompt = 'Extract the code.\n{ "code": 8500 }';
+      const validation = await client.callTool({ name: "validate_semantics", arguments: {
+        prompt, compiledPrompt: 'Extract the code.\n{"code":8500}', transformation: "json_whitespace",
+      } });
+      const validationText = validation.content[0];
+      if (validationText?.type !== "text") throw new Error("Expected validation response");
+      expect(JSON.parse(validationText.text)).toMatchObject({ deterministicChecksPassed: true });
       const response = await client.callTool({
         name: "analyze_prompt", arguments: { prompt: "Never change 7500." },
       });

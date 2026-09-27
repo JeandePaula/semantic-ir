@@ -1,0 +1,146 @@
+{
+  "approved": [
+    {
+      "id": "O-002",
+      "external_ref": "90071992547409931002",
+      "warehouse": "N",
+      "gross_cents": 10500,
+      "discount_cents": 525,
+      "net_cents": 9975,
+      "shipping_cents": 300,
+      "contribution_cents": 3375
+    },
+    {
+      "id": "O-010",
+      "external_ref": "90071992547409931010",
+      "warehouse": "C",
+      "gross_cents": 9800,
+      "discount_cents": 3263,
+      "net_cents": 6537,
+      "shipping_cents": 400,
+      "contribution_cents": 737
+    },
+    {
+      "id": "O-001",
+      "external_ref": "90071992547409931001",
+      "warehouse": "S",
+      "gross_cents": 15600,
+      "discount_cents": 1560,
+      "net_cents": 14040,
+      "shipping_cents": 300,
+      "contribution_cents": 5940
+    },
+    {
+      "id": "O-003",
+      "external_ref": "90071992547409931003",
+      "warehouse": "N",
+      "gross_cents": 24000,
+      "discount_cents": 0,
+      "net_cents": 24000,
+      "shipping_cents": 300,
+      "contribution_cents": 9700
+    },
+    {
+      "id": "O-011",
+      "external_ref": "90071992547409931011",
+      "warehouse": "C",
+      "gross_cents": 10500,
+      "discount_cents": 0,
+      "net_cents": 10500,
+      "shipping_cents": 700,
+      "contribution_cents": 3500
+    },
+    {
+      "id": "O-012",
+      "external_ref": "90071992547409931012",
+      "warehouse": "N",
+      "gross_cents": 10800,
+      "discount_cents": 0,
+      "net_cents": 10800,
+      "shipping_cents": 300,
+      "contribution_cents": 8100
+    },
+    {
+      "id": "O-014",
+      "external_ref": "90071992547409931014",
+      "warehouse": "S",
+      "gross_cents": 16000,
+      "discount_cents": 0,
+      "net_cents": 16000,
+      "shipping_cents": 900,
+      "contribution_cents": 5100
+    },
+    {
+      "id": "O-015",
+      "external_ref": "90071992547409931015",
+      "warehouse": "C",
+      "gross_cents": 15600,
+      "discount_cents": 0,
+      "net_cents": 15600,
+      "shipping_cents": 700,
+      "contribution_cents": 7100
+    }
+  ],
+  "rejected": [
+    {
+      "id": "O-008",
+      "reason": "insufficient_margin"
+    },
+    {
+      "id": "O-005",
+      "reason": "invalid_item"
+    },
+    {
+      "id": "O-006",
+      "reason": "invalid_item"
+    },
+    {
+      "id": "O-013",
+      "reason": "invalid_item"
+    },
+    {
+      "id": "O-007",
+      "reason": "insufficient_stock"
+    },
+    {
+      "id": "O-009",
+      "reason": "insufficient_stock"
+    }
+  ],
+  "cancelled": [
+    "O-004"
+  ],
+  "superseded_events": 4,
+  "totals": {
+    "approved_count": 8,
+    "rejected_count": 6,
+    "gross_cents": 112800,
+    "discount_cents": 5348,
+    "net_cents": 107452,
+    "shipping_cents": 3900,
+    "contribution_cents": 43552
+  },
+  "remaining": {
+    "N": {
+      "AUR": 0,
+      "BOLT": 1,
+      "COVE": 1,
+      "DUNE": 0,
+      "EMBER": 8
+    },
+    "S": {
+      "AUR": 1,
+      "BOLT": 0,
+      "COVE": 0,
+      "DUNE": 1,
+      "EMBER": 8
+    },
+    "C": {
+      "AUR": 0,
+      "BOLT": 0,
+      "COVE": 1,
+      "DUNE": 2,
+      "EMBER": 8
+    }
+  }
+}

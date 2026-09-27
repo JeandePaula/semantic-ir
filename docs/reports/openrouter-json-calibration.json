@@ -1,0 +1,367 @@
+{
+  "run": {
+    "id": "c4428d4c-6e46-4fab-8189-697247ca360c",
+    "startedAt": "2026-09-26T18:08:41.731Z",
+    "finishedAt": "2026-09-26T18:09:02.113Z",
+    "fingerprintSha256": "3a2b1fe7a01bc15c0d89ab7af859ed00c25004cfe050ee1ba2757a4527dfb990",
+    "taskClass": "extraction",
+    "candidates": [
+      {
+        "codec": {
+          "id": "json_compact",
+          "version": "0.1.0",
+          "definition": {
+            "schemaVersion": "codec/0.1",
+            "id": "json_compact",
+            "strategy": "compact_json",
+            "aliases": {
+              "intent": "I",
+              "constraints": "C"
+            },
+            "separator": ";",
+            "assignment": "=",
+            "fieldOrder": [
+              "intent",
+              "constraints",
+              "source"
+            ],
+            "nesting": "flat",
+            "flattenSingletons": true,
+            "referenceLiterals": false,
+            "referenceEntities": false,
+            "enumAliases": {},
+            "constraintEncoding": "explicit",
+            "relationshipEncoding": "explicit",
+            "omitNull": true,
+            "omitDefaults": true,
+            "omitNonsemanticMetadata": true,
+            "deduplicateRepeatedValues": false
+          },
+          "definitionSha256": "2af4faca4262e1e7d5c0d88adec0ce1ae263f8c6c2f9cf9e52f80ff765da043d",
+          "status": "experimental",
+          "parentVersion": null
+        },
+        "fitness": 1.1254027261462207,
+        "evaluations": [
+          {
+            "caseId": "json-calibration-0",
+            "codecVersion": "json_compact@0.1.0",
+            "schemaValid": true,
+            "literalPreservation": 1,
+            "hardConstraintPreservation": 1,
+            "negationPreservation": 1,
+            "semanticFidelity": 1,
+            "taskSuccess": true,
+            "qualityRatioToBaseline": 1,
+            "behavioralEquivalence": 1,
+            "passedHardGates": true,
+            "evidenceStatus": "measured",
+            "reasons": []
+          },
+          {
+            "caseId": "json-calibration-1",
+            "codecVersion": "json_compact@0.1.0",
+            "schemaValid": true,
+            "literalPreservation": 1,
+            "hardConstraintPreservation": 1,
+            "negationPreservation": 1,
+            "semanticFidelity": 1,
+            "taskSuccess": true,
+            "qualityRatioToBaseline": 1,
+            "behavioralEquivalence": 1,
+            "passedHardGates": true,
+            "evidenceStatus": "measured",
+            "reasons": []
+          }
+        ]
+      }
+    ],
+    "usedRequests": 12,
+    "usedTokens": 6902,
+    "usedCostUsd": 0.0005090000000000001,
+    "measuredCostUsd": 0.0005089999999999999,
+    "budgetMethod": "conservative_byte_envelope",
+    "status": "completed"
+  },
+  "selectedCodecId": "json_compact",
+  "selectionReason": "passed_calibration_validation_holdout",
+  "calibration": [
+    {
+      "caseId": "json-calibration-0",
+      "split": "calibration",
+      "evaluation": {
+        "caseId": "json-calibration-0",
+        "codecVersion": "json_compact@0.1.0",
+        "schemaValid": true,
+        "literalPreservation": 1,
+        "hardConstraintPreservation": 1,
+        "negationPreservation": 1,
+        "semanticFidelity": 1,
+        "taskSuccess": true,
+        "qualityRatioToBaseline": 1,
+        "behavioralEquivalence": 1,
+        "passedHardGates": true,
+        "evidenceStatus": "measured",
+        "reasons": []
+      },
+      "baseline": {
+        "inputTokens": 546,
+        "outputTokens": 52,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 52,
+        "latencyMs": 1518,
+        "costUsd": 0.00004784,
+        "costEvidence": "measured"
+      },
+      "candidate": {
+        "inputTokens": 292,
+        "outputTokens": 57,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 55,
+        "latencyMs": 1797,
+        "costUsd": 0.00004018,
+        "costEvidence": "measured"
+      }
+    },
+    {
+      "caseId": "json-calibration-1",
+      "split": "calibration",
+      "evaluation": {
+        "caseId": "json-calibration-1",
+        "codecVersion": "json_compact@0.1.0",
+        "schemaValid": true,
+        "literalPreservation": 1,
+        "hardConstraintPreservation": 1,
+        "negationPreservation": 1,
+        "semanticFidelity": 1,
+        "taskSuccess": true,
+        "qualityRatioToBaseline": 1,
+        "behavioralEquivalence": 1,
+        "passedHardGates": true,
+        "evidenceStatus": "measured",
+        "reasons": []
+      },
+      "baseline": {
+        "inputTokens": 587,
+        "outputTokens": 39,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 37,
+        "latencyMs": 1135,
+        "costUsd": 0.00004298,
+        "costEvidence": "measured"
+      },
+      "candidate": {
+        "inputTokens": 313,
+        "outputTokens": 56,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 59,
+        "latencyMs": 1559,
+        "costUsd": 0.00004052,
+        "costEvidence": "measured"
+      }
+    }
+  ],
+  "validation": [
+    {
+      "caseId": "json-validation-0",
+      "split": "validation",
+      "evaluation": {
+        "caseId": "json-validation-0",
+        "codecVersion": "json_compact@0.1.0",
+        "schemaValid": true,
+        "literalPreservation": 1,
+        "hardConstraintPreservation": 1,
+        "negationPreservation": 1,
+        "semanticFidelity": 1,
+        "taskSuccess": true,
+        "qualityRatioToBaseline": 1,
+        "behavioralEquivalence": 1,
+        "passedHardGates": true,
+        "evidenceStatus": "measured",
+        "reasons": []
+      },
+      "baseline": {
+        "inputTokens": 670,
+        "outputTokens": 33,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 26,
+        "latencyMs": 3086,
+        "costUsd": 0.0000433,
+        "costEvidence": "measured"
+      },
+      "candidate": {
+        "inputTokens": 356,
+        "outputTokens": 42,
+        "cachedInputTokens": 256,
+        "reasoningTokens": 41,
+        "latencyMs": 2533,
+        "costUsd": 0.00002884,
+        "costEvidence": "measured"
+      }
+    },
+    {
+      "caseId": "json-validation-1",
+      "split": "validation",
+      "evaluation": {
+        "caseId": "json-validation-1",
+        "codecVersion": "json_compact@0.1.0",
+        "schemaValid": true,
+        "literalPreservation": 1,
+        "hardConstraintPreservation": 1,
+        "negationPreservation": 1,
+        "semanticFidelity": 1,
+        "taskSuccess": true,
+        "qualityRatioToBaseline": 1,
+        "behavioralEquivalence": 1,
+        "passedHardGates": true,
+        "evidenceStatus": "measured",
+        "reasons": []
+      },
+      "baseline": {
+        "inputTokens": 711,
+        "outputTokens": 41,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 37,
+        "latencyMs": 896,
+        "costUsd": 0.00004894,
+        "costEvidence": "measured"
+      },
+      "candidate": {
+        "inputTokens": 377,
+        "outputTokens": 52,
+        "cachedInputTokens": 256,
+        "reasoningTokens": 51,
+        "latencyMs": 1617,
+        "costUsd": 0.00003468,
+        "costEvidence": "measured"
+      }
+    }
+  ],
+  "holdout": [
+    {
+      "caseId": "json-holdout-0",
+      "split": "holdout",
+      "evaluation": {
+        "caseId": "json-holdout-0",
+        "codecVersion": "json_compact@0.1.0",
+        "schemaValid": true,
+        "literalPreservation": 1,
+        "hardConstraintPreservation": 1,
+        "negationPreservation": 1,
+        "semanticFidelity": 1,
+        "taskSuccess": true,
+        "qualityRatioToBaseline": 1,
+        "behavioralEquivalence": 1,
+        "passedHardGates": true,
+        "evidenceStatus": "measured",
+        "reasons": []
+      },
+      "baseline": {
+        "inputTokens": 793,
+        "outputTokens": 54,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 52,
+        "latencyMs": 1678,
+        "costUsd": 0.00005872,
+        "costEvidence": "measured"
+      },
+      "candidate": {
+        "inputTokens": 419,
+        "outputTokens": 50,
+        "cachedInputTokens": 256,
+        "reasoningTokens": 48,
+        "latencyMs": 1254,
+        "costUsd": 0.00003536,
+        "costEvidence": "measured"
+      }
+    },
+    {
+      "caseId": "json-holdout-1",
+      "split": "holdout",
+      "evaluation": {
+        "caseId": "json-holdout-1",
+        "codecVersion": "json_compact@0.1.0",
+        "schemaValid": true,
+        "literalPreservation": 1,
+        "hardConstraintPreservation": 1,
+        "negationPreservation": 1,
+        "semanticFidelity": 1,
+        "taskSuccess": true,
+        "qualityRatioToBaseline": 1,
+        "behavioralEquivalence": 1,
+        "passedHardGates": true,
+        "evidenceStatus": "measured",
+        "reasons": []
+      },
+      "baseline": {
+        "inputTokens": 835,
+        "outputTokens": 34,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 27,
+        "latencyMs": 2371,
+        "costUsd": 0.0000504,
+        "costEvidence": "measured"
+      },
+      "candidate": {
+        "inputTokens": 441,
+        "outputTokens": 52,
+        "cachedInputTokens": 256,
+        "reasoningTokens": 46,
+        "latencyMs": 909,
+        "costUsd": 0.00003724,
+        "costEvidence": "measured"
+      }
+    }
+  ],
+  "costStatus": "provider_measured",
+  "holdoutEvidence": {
+    "cases": 2,
+    "baselineCostUsd": 0.00010912,
+    "candidateCostUsd": 0.0000726,
+    "savingsPercent": 33.467741935483865,
+    "costEvidence": "measured"
+  },
+  "screenedCandidates": [
+    {
+      "codecId": "original",
+      "reason": "no_size_reduction",
+      "savedBytes": 0
+    },
+    {
+      "codecId": "spacing",
+      "reason": "no_size_reduction",
+      "savedBytes": 0
+    },
+    {
+      "codecId": "context_dedupe",
+      "reason": "no_size_reduction",
+      "savedBytes": 0
+    },
+    {
+      "codecId": "tagged_semicolon",
+      "reason": "no_size_reduction",
+      "savedBytes": -40
+    },
+    {
+      "codecId": "tagged_pipe",
+      "reason": "no_size_reduction",
+      "savedBytes": -40
+    }
+  ],
+  "reservations": {
+    "tokens": 57786,
+    "costUsd": 0.00372456
+  },
+  "economics": {
+    "calibrationCostUsd": 0.0005089999999999999,
+    "costBasis": "measured",
+    "averageSavingsPerRequestUsd": 0.000018259999999999998,
+    "breakEvenRequests": 28,
+    "assumption": "Projection assumes future requests match the holdout costs; production savings are unverified."
+  },
+  "diagnostics": [
+    "output_tokens_grew_after_input_compression",
+    "reasoning_contributes_to_output_cost"
+  ],
+  "promoted": true
+}

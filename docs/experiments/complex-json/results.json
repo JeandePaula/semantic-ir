@@ -1,0 +1,907 @@
+{
+  "startedAt": "2026-09-26T18:19:16.305Z",
+  "provider": "openrouter",
+  "model": "z-ai/glm-5.3-flash",
+  "maxOutputTokens": 6144,
+  "reasoning": "configured_default",
+  "plannedCalls": 6,
+  "results": [
+    {
+      "repetition": 1,
+      "version": "normal",
+      "response": "{\n  \"approved\": [\n    {\n      \"id\": \"O-002\",\n      \"external_ref\": \"90071992547409931002\",\n      \"warehouse\": \"N\",\n      \"gross_cents\": 10500,\n      \"discount_cents\": 525,\n      \"net_cents\": 9975,\n      \"shipping_cents\": 300,\n      \"contribution_cents\": 3375\n    },\n    {\n      \"id\": \"O-010\",\n      \"external_ref\": \"90071992547409931010\",\n      \"warehouse\": \"C\",\n      \"gross_cents\": 9800,\n      \"discount_cents\": 3263,\n      \"net_cents\": 6537,\n      \"shipping_cents\": 400,\n      \"contribution_cents\": 737\n    },\n    {\n      \"id\": \"O-001\",\n      \"external_ref\": \"90071992547409931001\",\n      \"warehouse\": \"S\",\n      \"gross_cents\": 15600,\n      \"discount_cents\": 1560,\n      \"net_cents\": 14040,\n      \"shipping_cents\": 300,\n      \"contribution_cents\": 5940\n    },\n    {\n      \"id\": \"O-003\",\n      \"external_ref\": \"90071992547409931003\",\n      \"warehouse\": \"N\",\n      \"gross_cents\": 24000,\n      \"discount_cents\": 0,\n      \"net_cents\": 24000,\n      \"shipping_cents\": 300,\n      \"contribution_cents\": 9700\n    },\n    {\n      \"id\": \"O-011\",\n      \"external_ref\": \"90071992547409931011\",\n      \"warehouse\": \"C\",\n      \"gross_cents\": 10500,\n      \"discount_cents\": 0,\n      \"net_cents\": 10500,\n      \"shipping_cents\": 700,\n      \"contribution_cents\": 3500\n    },\n    {\n      \"id\": \"O-012\",\n      \"external_ref\": \"90071992547409931012\",\n      \"warehouse\": \"N\",\n      \"gross_cents\": 10800,\n      \"discount_cents\": 0,\n      \"net_cents\": 10800,\n      \"shipping_cents\": 300,\n      \"contribution_cents\": 8100\n    },\n    {\n      \"id\": \"O-014\",\n      \"external_ref\": \"90071992547409931014\",\n      \"warehouse\": \"S\",\n      \"gross_cents\": 16000,\n      \"discount_cents\": 0,\n      \"net_cents\": 16000,\n      \"shipping_cents\": 900,\n      \"contribution_cents\": 5100\n    },\n    {\n      \"id\": \"O-015\",\n      \"external_ref\": \"90071992547409931015\",\n      \"warehouse\": \"C\",\n      \"gross_cents\": 15600,\n      \"discount_cents\": 0,\n      \"net_cents\": 15600,\n      \"shipping_cents\": 700,\n      \"contribution_cents\": 7100\n    }\n  ],\n  \"rejected\": [\n    {\n      \"id\": \"O-008\",\n      \"reason\": \"insufficient_margin\"\n    },\n    {\n      \"id\": \"O-005\",\n      \"reason\": \"invalid_item\"\n    },\n    {\n      \"id\": \"O-006\",\n      \"reason\": \"invalid_item\"\n    },\n    {\n      \"id\": \"O-013\",\n      \"reason\": \"invalid_item\"\n    },\n    {\n      \"id\": \"O-007\",\n      \"reason\": \"insufficient_stock\"\n    },\n    {\n      \"id\": \"O-009\",\n      \"reason\": \"insufficient_stock\"\n    }\n  ],\n  \"cancelled\": [\n    \"O-004\"\n  ],\n  \"superseded_events\": 4,\n  \"totals\": {\n    \"approved_count\": 8,\n    \"rejected_count\": 6,\n    \"gross_cents\": 112800,\n    \"discount_cents\": 5348,\n    \"net_cents\": 107452,\n    \"shipping_cents\": 3900,\n    \"contribution_cents\": 43552\n  },\n  \"remaining\": {\n    \"N\": {\n      \"AUR\": 0,\n      \"BOLT\": 1,\n      \"COVE\": 1,\n      \"DUNE\": 0,\n      \"EMBER\": 8\n    },\n    \"S\": {\n      \"AUR\": 1,\n      \"BOLT\": 0,\n      \"COVE\": 0,\n      \"DUNE\": 1,\n      \"EMBER\": 8\n    },\n    \"C\": {\n      \"AUR\": 0,\n      \"BOLT\": 0,\n      \"COVE\": 1,\n      \"DUNE\": 2,\n      \"EMBER\": 8\n    }\n  }\n}",
+      "usage": {
+        "inputTokens": 4248,
+        "cachedInputTokens": 0,
+        "outputTokens": 5854,
+        "reasoningTokens": 2581,
+        "totalTokens": 10102,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00309692,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 62790,
+      "evaluation": {
+        "passed": false,
+        "validJson": true,
+        "sections": {
+          "approved": false,
+          "rejected": true,
+          "cancelled": true,
+          "superseded_events": true,
+          "totals": false,
+          "remaining": false
+        },
+        "differences": [
+          {
+            "path": "$.approved.1.discount_cents",
+            "expected": 326,
+            "actual": 3263
+          },
+          {
+            "path": "$.approved.1.net_cents",
+            "expected": 9474,
+            "actual": 6537
+          },
+          {
+            "path": "$.approved.1.contribution_cents",
+            "expected": 3674,
+            "actual": 737
+          },
+          {
+            "path": "$.approved.4.warehouse",
+            "expected": "S",
+            "actual": "C"
+          },
+          {
+            "path": "$.approved.4.shipping_cents",
+            "expected": 300,
+            "actual": 700
+          },
+          {
+            "path": "$.approved.4.contribution_cents",
+            "expected": 3900,
+            "actual": 3500
+          },
+          {
+            "path": "$.totals.discount_cents",
+            "expected": 2411,
+            "actual": 5348
+          },
+          {
+            "path": "$.totals.net_cents",
+            "expected": 110389,
+            "actual": 107452
+          },
+          {
+            "path": "$.totals.shipping_cents",
+            "expected": 3500,
+            "actual": 3900
+          },
+          {
+            "path": "$.totals.contribution_cents",
+            "expected": 46889,
+            "actual": 43552
+          },
+          {
+            "path": "$.remaining.C.BOLT",
+            "expected": 3,
+            "actual": 0
+          }
+        ]
+      }
+    },
+    {
+      "repetition": 1,
+      "version": "compact",
+      "response": "{\"approved\":[{\"id\":\"O-007\",\"external_ref\":\"90071992547409931007\",\"warehouse\":\"S\",\"gross_cents\":16000,\"discount_cents\":1600,\"net_cents\":14400,\"shipping_cents\":300,\"contribution_cents\":4100},{\"id\":\"O-015\",\"external_ref\":\"90071992547409931015\",\"warehouse\":\"S\",\"gross_cents\":15600,\"discount_cents\":0,\"net_cents\":15600,\"shipping_cents\":300,\"contribution_cents\":7500},{\"id\":\"O-012\",\"external_ref\":\"90071992547409931012\",\"warehouse\":\"N\",\"gross_cents\":10800,\"discount_cents\":0,\"net_cents\":10800,\"shipping_cents\":300,\"contribution_cents\":8100},{\"id\":\"O-014\",\"external_ref\":\"90071992547409931014\",\"warehouse\":\"C\",\"gross_cents\":16000,\"discount_cents\":0,\"net_cents\":16000,\"shipping_cents\":600,\"contribution_cents\":5400},{\"id\":\"O-001\",\"external_ref\":\"90071992547409931001\",\"warehouse\":\"C\",\"gross_cents\":15600,\"discount_cents\":1560,\"net_cents\":14040,\"shipping_cents\":700,\"contribution_cents\":5540},{\"id\":\"O-003\",\"external_ref\":\"90071992547409931003\",\"warehouse\":\"N\",\"gross_cents\":24000,\"discount_cents\":0,\"net_cents\":24000,\"shipping_cents\":300,\"contribution_cents\":9700},{\"id\":\"O-011\",\"external_ref\":\"90071992547409931011\",\"warehouse\":\"S\",\"gross_cents\":10500,\"discount_cents\":0,\"net_cents\":10500,\"shipping_cents\":300,\"contribution_cents\":3900},{\"id\":\"O-002\",\"external_ref\":\"90071992547409931002\",\"warehouse\":\"N\",\"gross_cents\":10500,\"discount_cents\":525,\"net_cents\":9975,\"shipping_cents\":300,\"contribution_cents\":3375}],\"rejected\":[{\"id\":\"O-009\",\"reason\":\"insufficient_stock\"},{\"id\":\"O-005\",\"reason\":\"invalid_item\"},{\"id\":\"O-006\",\"reason\":\"invalid_item\"},{\"id\":\"O-013\",\"reason\":\"invalid_item\"},{\"id\":\"O-008\",\"reason\":\"insufficient_margin\"},{\"id\":\"O-010\",\"reason\":\"insufficient_stock\"}],\"cancelled\":[\"O-004\"],\"superseded_events\":4,\"totals\":{\"approved_count\":8,\"rejected_count\":6,\"gross_cents\":119000,\"discount_cents\":3685,\"net_cents\":115315,\"shipping_cents\":3100,\"contribution_cents\":47615},\"remaining\":{\"N\":{\"AUR\":0,\"BOLT\":1,\"COVE\":1,\"DUNE\":0,\"EMBER\":8},\"S\":{\"AUR\":1,\"BOLT\":0,\"COVE\":0,\"DUNE\":1,\"EMBER\":8},\"C\":{\"AUR\":0,\"BOLT\":3,\"COVE\":0,\"DUNE\":3,\"EMBER\":8}}}",
+      "usage": {
+        "inputTokens": 2886,
+        "cachedInputTokens": 0,
+        "outputTokens": 4603,
+        "reasoningTokens": 2275,
+        "totalTokens": 7489,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00241694,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 70205,
+      "evaluation": {
+        "passed": false,
+        "validJson": true,
+        "sections": {
+          "approved": false,
+          "rejected": false,
+          "cancelled": true,
+          "superseded_events": true,
+          "totals": false,
+          "remaining": false
+        },
+        "differences": [
+          {
+            "path": "$.approved.0.id",
+            "expected": "O-002",
+            "actual": "O-007"
+          },
+          {
+            "path": "$.approved.0.external_ref",
+            "expected": "90071992547409931002",
+            "actual": "90071992547409931007"
+          },
+          {
+            "path": "$.approved.0.warehouse",
+            "expected": "N",
+            "actual": "S"
+          },
+          {
+            "path": "$.approved.0.gross_cents",
+            "expected": 10500,
+            "actual": 16000
+          },
+          {
+            "path": "$.approved.0.discount_cents",
+            "expected": 525,
+            "actual": 1600
+          },
+          {
+            "path": "$.approved.0.net_cents",
+            "expected": 9975,
+            "actual": 14400
+          },
+          {
+            "path": "$.approved.0.contribution_cents",
+            "expected": 3375,
+            "actual": 4100
+          },
+          {
+            "path": "$.approved.1.id",
+            "expected": "O-010",
+            "actual": "O-015"
+          },
+          {
+            "path": "$.approved.1.external_ref",
+            "expected": "90071992547409931010",
+            "actual": "90071992547409931015"
+          },
+          {
+            "path": "$.approved.1.warehouse",
+            "expected": "C",
+            "actual": "S"
+          },
+          {
+            "path": "$.approved.1.gross_cents",
+            "expected": 9800,
+            "actual": 15600
+          },
+          {
+            "path": "$.approved.1.discount_cents",
+            "expected": 326,
+            "actual": 0
+          },
+          {
+            "path": "$.approved.1.net_cents",
+            "expected": 9474,
+            "actual": 15600
+          },
+          {
+            "path": "$.approved.1.shipping_cents",
+            "expected": 400,
+            "actual": 300
+          },
+          {
+            "path": "$.approved.1.contribution_cents",
+            "expected": 3674,
+            "actual": 7500
+          },
+          {
+            "path": "$.approved.2.id",
+            "expected": "O-001",
+            "actual": "O-012"
+          },
+          {
+            "path": "$.approved.2.external_ref",
+            "expected": "90071992547409931001",
+            "actual": "90071992547409931012"
+          },
+          {
+            "path": "$.approved.2.warehouse",
+            "expected": "S",
+            "actual": "N"
+          },
+          {
+            "path": "$.approved.2.gross_cents",
+            "expected": 15600,
+            "actual": 10800
+          },
+          {
+            "path": "$.approved.2.discount_cents",
+            "expected": 1560,
+            "actual": 0
+          },
+          {
+            "path": "$.approved.2.net_cents",
+            "expected": 14040,
+            "actual": 10800
+          },
+          {
+            "path": "$.approved.2.contribution_cents",
+            "expected": 5940,
+            "actual": 8100
+          },
+          {
+            "path": "$.approved.3.id",
+            "expected": "O-003",
+            "actual": "O-014"
+          },
+          {
+            "path": "$.approved.3.external_ref",
+            "expected": "90071992547409931003",
+            "actual": "90071992547409931014"
+          },
+          {
+            "path": "$.approved.3.warehouse",
+            "expected": "N",
+            "actual": "C"
+          },
+          {
+            "path": "$.approved.3.gross_cents",
+            "expected": 24000,
+            "actual": 16000
+          },
+          {
+            "path": "$.approved.3.net_cents",
+            "expected": 24000,
+            "actual": 16000
+          },
+          {
+            "path": "$.approved.3.shipping_cents",
+            "expected": 300,
+            "actual": 600
+          },
+          {
+            "path": "$.approved.3.contribution_cents",
+            "expected": 9700,
+            "actual": 5400
+          },
+          {
+            "path": "$.approved.4.id",
+            "expected": "O-011",
+            "actual": "O-001"
+          },
+          {
+            "path": "$.approved.4.external_ref",
+            "expected": "90071992547409931011",
+            "actual": "90071992547409931001"
+          },
+          {
+            "path": "$.approved.4.warehouse",
+            "expected": "S",
+            "actual": "C"
+          },
+          {
+            "path": "$.approved.4.gross_cents",
+            "expected": 10500,
+            "actual": 15600
+          },
+          {
+            "path": "$.approved.4.discount_cents",
+            "expected": 0,
+            "actual": 1560
+          },
+          {
+            "path": "$.approved.4.net_cents",
+            "expected": 10500,
+            "actual": 14040
+          },
+          {
+            "path": "$.approved.4.shipping_cents",
+            "expected": 300,
+            "actual": 700
+          },
+          {
+            "path": "$.approved.4.contribution_cents",
+            "expected": 3900,
+            "actual": 5540
+          },
+          {
+            "path": "$.approved.5.id",
+            "expected": "O-012",
+            "actual": "O-003"
+          },
+          {
+            "path": "$.approved.5.external_ref",
+            "expected": "90071992547409931012",
+            "actual": "90071992547409931003"
+          },
+          {
+            "path": "$.approved.5.gross_cents",
+            "expected": 10800,
+            "actual": 24000
+          },
+          {
+            "path": "$.approved.5.net_cents",
+            "expected": 10800,
+            "actual": 24000
+          },
+          {
+            "path": "$.approved.5.contribution_cents",
+            "expected": 8100,
+            "actual": 9700
+          },
+          {
+            "path": "$.approved.6.id",
+            "expected": "O-014",
+            "actual": "O-011"
+          },
+          {
+            "path": "$.approved.6.external_ref",
+            "expected": "90071992547409931014",
+            "actual": "90071992547409931011"
+          },
+          {
+            "path": "$.approved.6.gross_cents",
+            "expected": 16000,
+            "actual": 10500
+          },
+          {
+            "path": "$.approved.6.net_cents",
+            "expected": 16000,
+            "actual": 10500
+          },
+          {
+            "path": "$.approved.6.shipping_cents",
+            "expected": 900,
+            "actual": 300
+          },
+          {
+            "path": "$.approved.6.contribution_cents",
+            "expected": 5100,
+            "actual": 3900
+          },
+          {
+            "path": "$.approved.7.id",
+            "expected": "O-015",
+            "actual": "O-002"
+          },
+          {
+            "path": "$.approved.7.external_ref",
+            "expected": "90071992547409931015",
+            "actual": "90071992547409931002"
+          },
+          {
+            "path": "$.approved.7.warehouse",
+            "expected": "C",
+            "actual": "N"
+          },
+          {
+            "path": "$.approved.7.gross_cents",
+            "expected": 15600,
+            "actual": 10500
+          },
+          {
+            "path": "$.approved.7.discount_cents",
+            "expected": 0,
+            "actual": 525
+          },
+          {
+            "path": "$.approved.7.net_cents",
+            "expected": 15600,
+            "actual": 9975
+          },
+          {
+            "path": "$.approved.7.shipping_cents",
+            "expected": 700,
+            "actual": 300
+          },
+          {
+            "path": "$.approved.7.contribution_cents",
+            "expected": 7100,
+            "actual": 3375
+          },
+          {
+            "path": "$.rejected.0.id",
+            "expected": "O-008",
+            "actual": "O-009"
+          },
+          {
+            "path": "$.rejected.0.reason",
+            "expected": "insufficient_margin",
+            "actual": "insufficient_stock"
+          },
+          {
+            "path": "$.rejected.4.id",
+            "expected": "O-007",
+            "actual": "O-008"
+          },
+          {
+            "path": "$.rejected.4.reason",
+            "expected": "insufficient_stock",
+            "actual": "insufficient_margin"
+          },
+          {
+            "path": "$.rejected.5.id",
+            "expected": "O-009",
+            "actual": "O-010"
+          },
+          {
+            "path": "$.totals.gross_cents",
+            "expected": 112800,
+            "actual": 119000
+          },
+          {
+            "path": "$.totals.discount_cents",
+            "expected": 2411,
+            "actual": 3685
+          },
+          {
+            "path": "$.totals.net_cents",
+            "expected": 110389,
+            "actual": 115315
+          },
+          {
+            "path": "$.totals.shipping_cents",
+            "expected": 3500,
+            "actual": 3100
+          },
+          {
+            "path": "$.totals.contribution_cents",
+            "expected": 46889,
+            "actual": 47615
+          },
+          {
+            "path": "$.remaining.C.COVE",
+            "expected": 1,
+            "actual": 0
+          },
+          {
+            "path": "$.remaining.C.DUNE",
+            "expected": 2,
+            "actual": 3
+          }
+        ]
+      }
+    },
+    {
+      "repetition": 2,
+      "version": "compact",
+      "response": "{\"approved\":[{\"id\":\"O-007\",\"external_ref\":\"90071992547409931007\",\"warehouse\":\"S\",\"gross_cents\":16000,\"discount_cents\":1600,\"net_cents\":14400,\"shipping_cents\":300,\"contribution_cents\":4100},{\"id\":\"O-012\",\"external_ref\":\"90071992547409931012\",\"warehouse\":\"N\",\"gross_cents\":10800,\"discount_cents\":0,\"net_cents\":10800,\"shipping_cents\":300,\"contribution_cents\":8100},{\"id\":\"O-014\",\"external_ref\":\"90071992547409931014\",\"warehouse\":\"C\",\"gross_cents\":16000,\"discount_cents\":0,\"net_cents\":16000,\"shipping_cents\":600,\"contribution_cents\":5400},{\"id\":\"O-001\",\"external_ref\":\"90071992547409931001\",\"warehouse\":\"S\",\"gross_cents\":15600,\"discount_cents\":1560,\"net_cents\":14040,\"shipping_cents\":300,\"contribution_cents\":5940},{\"id\":\"O-003\",\"external_ref\":\"90071992547409931003\",\"warehouse\":\"N\",\"gross_cents\":24000,\"discount_cents\":0,\"net_cents\":24000,\"shipping_cents\":300,\"contribution_cents\":9700},{\"id\":\"O-011\",\"external_ref\":\"90071992547409931011\",\"warehouse\":\"S\",\"gross_cents\":10500,\"discount_cents\":0,\"net_cents\":10500,\"shipping_cents\":300,\"contribution_cents\":3900},{\"id\":\"O-002\",\"external_ref\":\"90071992547409931002\",\"warehouse\":\"N\",\"gross_cents\":10500,\"discount_cents\":525,\"net_cents\":9975,\"shipping_cents\":300,\"contribution_cents\":3375}],\"rejected\":[{\"id\":\"O-009\",\"reason\":\"insufficient_stock\"},{\"id\":\"O-005\",\"reason\":\"invalid_item\"},{\"id\":\"O-006\",\"reason\":\"invalid_item\"},{\"id\":\"O-013\",\"reason\":\"invalid_item\"},{\"id\":\"O-008\",\"reason\":\"insufficient_margin\"}],\"cancelled\":[\"O-004\"],\"superseded_events\":4,\"totals\":{\"approved_count\":7,\"rejected_count\":5,\"gross_cents\":103400,\"discount_cents\":3685,\"net_cents\":99715,\"shipping_cents\":2400,\"contribution_cents\":40515},\"remaining\":{\"N\":{\"AUR\":0,\"BOLT\":1,\"COVE\":1,\"DUNE\":0,\"EMBER\":8},\"S\":{\"AUR\":1,\"BOLT\":0,\"COVE\":0,\"DUNE\":1,\"EMBER\":8},\"C\":{\"AUR\":1,\"BOLT\":3,\"COVE\":0,\"DUNE\":5,\"EMBER\":8}}}",
+      "usage": {
+        "inputTokens": 2886,
+        "cachedInputTokens": 0,
+        "outputTokens": 4364,
+        "reasoningTokens": 2186,
+        "totalTokens": 7250,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00229744,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 55947,
+      "evaluation": {
+        "passed": false,
+        "validJson": true,
+        "sections": {
+          "approved": false,
+          "rejected": false,
+          "cancelled": true,
+          "superseded_events": true,
+          "totals": false,
+          "remaining": false
+        },
+        "differences": [
+          {
+            "path": "$.approved.0.id",
+            "expected": "O-002",
+            "actual": "O-007"
+          },
+          {
+            "path": "$.approved.0.external_ref",
+            "expected": "90071992547409931002",
+            "actual": "90071992547409931007"
+          },
+          {
+            "path": "$.approved.0.warehouse",
+            "expected": "N",
+            "actual": "S"
+          },
+          {
+            "path": "$.approved.0.gross_cents",
+            "expected": 10500,
+            "actual": 16000
+          },
+          {
+            "path": "$.approved.0.discount_cents",
+            "expected": 525,
+            "actual": 1600
+          },
+          {
+            "path": "$.approved.0.net_cents",
+            "expected": 9975,
+            "actual": 14400
+          },
+          {
+            "path": "$.approved.0.contribution_cents",
+            "expected": 3375,
+            "actual": 4100
+          },
+          {
+            "path": "$.approved.1.id",
+            "expected": "O-010",
+            "actual": "O-012"
+          },
+          {
+            "path": "$.approved.1.external_ref",
+            "expected": "90071992547409931010",
+            "actual": "90071992547409931012"
+          },
+          {
+            "path": "$.approved.1.warehouse",
+            "expected": "C",
+            "actual": "N"
+          },
+          {
+            "path": "$.approved.1.gross_cents",
+            "expected": 9800,
+            "actual": 10800
+          },
+          {
+            "path": "$.approved.1.discount_cents",
+            "expected": 326,
+            "actual": 0
+          },
+          {
+            "path": "$.approved.1.net_cents",
+            "expected": 9474,
+            "actual": 10800
+          },
+          {
+            "path": "$.approved.1.shipping_cents",
+            "expected": 400,
+            "actual": 300
+          },
+          {
+            "path": "$.approved.1.contribution_cents",
+            "expected": 3674,
+            "actual": 8100
+          },
+          {
+            "path": "$.approved.2.id",
+            "expected": "O-001",
+            "actual": "O-014"
+          },
+          {
+            "path": "$.approved.2.external_ref",
+            "expected": "90071992547409931001",
+            "actual": "90071992547409931014"
+          },
+          {
+            "path": "$.approved.2.warehouse",
+            "expected": "S",
+            "actual": "C"
+          },
+          {
+            "path": "$.approved.2.gross_cents",
+            "expected": 15600,
+            "actual": 16000
+          },
+          {
+            "path": "$.approved.2.discount_cents",
+            "expected": 1560,
+            "actual": 0
+          },
+          {
+            "path": "$.approved.2.net_cents",
+            "expected": 14040,
+            "actual": 16000
+          },
+          {
+            "path": "$.approved.2.shipping_cents",
+            "expected": 300,
+            "actual": 600
+          },
+          {
+            "path": "$.approved.2.contribution_cents",
+            "expected": 5940,
+            "actual": 5400
+          },
+          {
+            "path": "$.approved.3.id",
+            "expected": "O-003",
+            "actual": "O-001"
+          },
+          {
+            "path": "$.approved.3.external_ref",
+            "expected": "90071992547409931003",
+            "actual": "90071992547409931001"
+          },
+          {
+            "path": "$.approved.3.warehouse",
+            "expected": "N",
+            "actual": "S"
+          },
+          {
+            "path": "$.approved.3.gross_cents",
+            "expected": 24000,
+            "actual": 15600
+          },
+          {
+            "path": "$.approved.3.discount_cents",
+            "expected": 0,
+            "actual": 1560
+          },
+          {
+            "path": "$.approved.3.net_cents",
+            "expected": 24000,
+            "actual": 14040
+          },
+          {
+            "path": "$.approved.3.contribution_cents",
+            "expected": 9700,
+            "actual": 5940
+          },
+          {
+            "path": "$.approved.4.id",
+            "expected": "O-011",
+            "actual": "O-003"
+          },
+          {
+            "path": "$.approved.4.external_ref",
+            "expected": "90071992547409931011",
+            "actual": "90071992547409931003"
+          },
+          {
+            "path": "$.approved.4.warehouse",
+            "expected": "S",
+            "actual": "N"
+          },
+          {
+            "path": "$.approved.4.gross_cents",
+            "expected": 10500,
+            "actual": 24000
+          },
+          {
+            "path": "$.approved.4.net_cents",
+            "expected": 10500,
+            "actual": 24000
+          },
+          {
+            "path": "$.approved.4.contribution_cents",
+            "expected": 3900,
+            "actual": 9700
+          },
+          {
+            "path": "$.approved.5.id",
+            "expected": "O-012",
+            "actual": "O-011"
+          },
+          {
+            "path": "$.approved.5.external_ref",
+            "expected": "90071992547409931012",
+            "actual": "90071992547409931011"
+          },
+          {
+            "path": "$.approved.5.warehouse",
+            "expected": "N",
+            "actual": "S"
+          },
+          {
+            "path": "$.approved.5.gross_cents",
+            "expected": 10800,
+            "actual": 10500
+          },
+          {
+            "path": "$.approved.5.net_cents",
+            "expected": 10800,
+            "actual": 10500
+          },
+          {
+            "path": "$.approved.5.contribution_cents",
+            "expected": 8100,
+            "actual": 3900
+          },
+          {
+            "path": "$.approved.6.id",
+            "expected": "O-014",
+            "actual": "O-002"
+          },
+          {
+            "path": "$.approved.6.external_ref",
+            "expected": "90071992547409931014",
+            "actual": "90071992547409931002"
+          },
+          {
+            "path": "$.approved.6.warehouse",
+            "expected": "S",
+            "actual": "N"
+          },
+          {
+            "path": "$.approved.6.gross_cents",
+            "expected": 16000,
+            "actual": 10500
+          },
+          {
+            "path": "$.approved.6.discount_cents",
+            "expected": 0,
+            "actual": 525
+          },
+          {
+            "path": "$.approved.6.net_cents",
+            "expected": 16000,
+            "actual": 9975
+          },
+          {
+            "path": "$.approved.6.shipping_cents",
+            "expected": 900,
+            "actual": 300
+          },
+          {
+            "path": "$.approved.6.contribution_cents",
+            "expected": 5100,
+            "actual": 3375
+          },
+          {
+            "path": "$.approved.7",
+            "expected": {
+              "id": "O-015",
+              "external_ref": "90071992547409931015",
+              "warehouse": "C",
+              "gross_cents": 15600,
+              "discount_cents": 0,
+              "net_cents": 15600,
+              "shipping_cents": 700,
+              "contribution_cents": 7100
+            }
+          },
+          {
+            "path": "$.rejected.0.id",
+            "expected": "O-008",
+            "actual": "O-009"
+          },
+          {
+            "path": "$.rejected.0.reason",
+            "expected": "insufficient_margin",
+            "actual": "insufficient_stock"
+          },
+          {
+            "path": "$.rejected.4.id",
+            "expected": "O-007",
+            "actual": "O-008"
+          },
+          {
+            "path": "$.rejected.4.reason",
+            "expected": "insufficient_stock",
+            "actual": "insufficient_margin"
+          },
+          {
+            "path": "$.rejected.5",
+            "expected": {
+              "id": "O-009",
+              "reason": "insufficient_stock"
+            }
+          },
+          {
+            "path": "$.totals.approved_count",
+            "expected": 8,
+            "actual": 7
+          },
+          {
+            "path": "$.totals.rejected_count",
+            "expected": 6,
+            "actual": 5
+          },
+          {
+            "path": "$.totals.gross_cents",
+            "expected": 112800,
+            "actual": 103400
+          },
+          {
+            "path": "$.totals.discount_cents",
+            "expected": 2411,
+            "actual": 3685
+          },
+          {
+            "path": "$.totals.net_cents",
+            "expected": 110389,
+            "actual": 99715
+          },
+          {
+            "path": "$.totals.shipping_cents",
+            "expected": 3500,
+            "actual": 2400
+          },
+          {
+            "path": "$.totals.contribution_cents",
+            "expected": 46889,
+            "actual": 40515
+          },
+          {
+            "path": "$.remaining.C.AUR",
+            "expected": 0,
+            "actual": 1
+          },
+          {
+            "path": "$.remaining.C.COVE",
+            "expected": 1,
+            "actual": 0
+          },
+          {
+            "path": "$.remaining.C.DUNE",
+            "expected": 2,
+            "actual": 5
+          }
+        ]
+      }
+    },
+    {
+      "repetition": 2,
+      "version": "normal",
+      "response": "{\"approved\":[{\"id\":\"O-007\",\"external_ref\":\"90071992547409931007\",\"warehouse\":\"S\",\"gross_cents\":16000,\"discount_cents\":1600,\"net_cents\":14400,\"shipping_cents\":300,\"contribution_cents\":4100},{\"id\":\"O-015\",\"external_ref\":\"90071992547409931015\",\"warehouse\":\"S\",\"gross_cents\":15600,\"discount_cents\":0,\"net_cents\":15600,\"shipping_cents\":300,\"contribution_cents\":7500},{\"id\":\"O-012\",\"external_ref\":\"90071992547409931012\",\"warehouse\":\"N\",\"gross_cents\":10800,\"discount_cents\":0,\"net_cents\":10800,\"shipping_cents\":300,\"contribution_cents\":8100},{\"id\":\"O-014\",\"external_ref\":\"90071992547409931014\",\"warehouse\":\"C\",\"gross_cents\":16000,\"discount_cents\":0,\"net_cents\":16000,\"shipping_cents\":600,\"contribution_cents\":5400},{\"id\":\"O-001\",\"external_ref\":\"90071992547409931001\",\"warehouse\":\"C\",\"gross_cents\":15600,\"discount_cents\":1560,\"net_cents\":14040,\"shipping_cents\":700,\"contribution_cents\":5540},{\"id\":\"O-003\",\"external_ref\":\"90071992547409931003\",\"warehouse\":\"N\",\"gross_cents\":24000,\"discount_cents\":0,\"net_cents\":24000,\"shipping_cents\":300,\"contribution_cents\":9700},{\"id\":\"O-011\",\"external_ref\":\"90071992547409931011\",\"warehouse\":\"S\",\"gross_cents\":10500,\"discount_cents\":0,\"net_cents\":10500,\"shipping_cents\":300,\"contribution_cents\":3900},{\"id\":\"O-002\",\"external_ref\":\"90071992547409931002\",\"warehouse\":\"N\",\"gross_cents\":10500,\"discount_cents\":525,\"net_cents\":9975,\"shipping_cents\":300,\"contribution_cents\":3375}],\"rejected\":[{\"",
+      "usage": {
+        "inputTokens": 4248,
+        "cachedInputTokens": 4224,
+        "outputTokens": 6144,
+        "reasoningTokens": 3440,
+        "totalTokens": 10392,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00313632,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 88981,
+      "evaluation": {
+        "passed": false,
+        "validJson": false,
+        "sections": {},
+        "differences": [
+          {
+            "path": "$",
+            "error": "invalid_json"
+          }
+        ]
+      }
+    }
+  ],
+  "prompts": {
+    "normal": {
+      "bytes": 16789,
+      "sha256": "ee19085c5e55f2533c7c11b78085b66dd6041151fb21965235a332142a5ac04d"
+    },
+    "compact": {
+      "bytes": 9416,
+      "sha256": "e0465ceaf4e100d7049106581dceac35fdc99360899e76b7052aea5df2a902e6"
+    }
+  },
+  "runtimeDecision": {
+    "mode": "original",
+    "codecVersion": null,
+    "fallbackReason": "high_risk_or_low_classification_confidence",
+    "taskClass": "extraction",
+    "risk": "high",
+    "fingerprintSha256": "3a2b1fe7a01bc15c0d89ab7af859ed00c25004cfe050ee1ba2757a4527dfb990"
+  },
+  "method": "Controlled direct comparison; does not promote a profile or override runtime risk gates. Three repetitions per version, alternating pair order. Response cache disabled; provider input cache reported.",
+  "accounting": {
+    "requests": 5,
+    "tokens": 75211,
+    "measuredCostUsd": 0.01094762,
+    "accountedCostUsd": 0.015372980000000001,
+    "cumulativeRequests": 19,
+    "cumulativeMeasuredCostUsd": 0.01156562,
+    "cumulativeAccountedCostUsd": 0.015990980000000002
+  },
+  "error": "openrouter response did not contain text"
+}

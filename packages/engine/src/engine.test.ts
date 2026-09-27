@@ -92,6 +92,7 @@ describe("engine", () => {
     const run = await optimizer.optimize({
       fingerprint: await adapter.getModelFingerprint(), taskClass: "extraction",
       suite: SYNTHETIC_SUITE,
+      minimumSavingsBytes: 1,
       seeds: DEFAULT_CODECS.map((definition) => ({
         id: definition.id, version: "0.1.0", definition,
         definitionSha256: "", status: "experimental", parentVersion: null,
@@ -113,9 +114,10 @@ describe("engine", () => {
     const run = await optimizer.optimize({
       fingerprint: await adapter.getModelFingerprint(), taskClass: "extraction",
       suite: SYNTHETIC_SUITE, seeds: [{
-        id: DEFAULT_CODECS[0]!.id, version: "0.1.0", definition: DEFAULT_CODECS[0]!,
+        id: DEFAULT_CODECS[1]!.id, version: "0.1.0", definition: DEFAULT_CODECS[1]!,
         definitionSha256: "", status: "experimental", parentVersion: null,
       }],
+      minimumSavingsBytes: 1,
       budget: { maxRequests: 1, maxTokens: 100, maxCostUsd: 1, maxDurationMs: 60_000 },
     });
     expect(run.status).toBe("budget_exhausted");

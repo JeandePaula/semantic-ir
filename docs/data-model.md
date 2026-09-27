@@ -8,8 +8,8 @@ O MVP usa `node:sqlite` no arquivo `~/.semantic-ir/semantic-ir.sqlite`, substitu
 | `profiles` | Provider, modelo, classe de tarefa, hash do fingerprint, codec estável e estado. |
 | `profile_history` | Promoções e rollback com data. |
 | `metrics` | Request ID, optimization scope, modelo, tarefa, codec, fallback, usage, custo estimado e latência. |
-| `settings` | Modelo padrão e tabela de preço fornecida pelo usuário. |
-| `calibration_runs` | Relatório de cada calibração: orçamento reservado, gasto medido, avaliações por caso, decisão e evidência dos casos holdout. |
+| `settings` | Modelo padrão, tabela de preço e reasoning por provider/modelo. |
+| `calibration_runs` | Relatório de cada calibração: reservas cumulativas, consumo reconciliado, gasto medido, descartes locais, avaliações, diagnósticos, amortização projetada e evidência holdout. |
 
 `usage_json` tem input, cached input, output, reasoning e total, cada um nullable, mais a origem. Cached input é subconjunto de input; a relação de reasoning com output depende do contrato do provider. `cost_json` pode usar custo reportado pelo OpenRouter (`measured`) ou combinar usage observado com preços configurados (`estimated`). Ausência de dados permanece `null`, nunca vira economia zero.
 

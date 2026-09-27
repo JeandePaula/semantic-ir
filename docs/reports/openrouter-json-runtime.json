@@ -1,0 +1,57 @@
+{
+  "provider": "openrouter",
+  "model": "z-ai/glm-5.3-flash",
+  "expected": "MAGENTA",
+  "response": "MAGENTA",
+  "passed": true,
+  "decision": {
+    "mode": "compiled",
+    "codecVersion": "json_compact@0.1.0",
+    "fallbackReason": null,
+    "taskClass": "extraction",
+    "risk": "medium",
+    "fingerprintSha256": "3a2b1fe7a01bc15c0d89ab7af859ed00c25004cfe050ee1ba2757a4527dfb990"
+  },
+  "usage": {
+    "inputTokens": 548,
+    "cachedInputTokens": 0,
+    "outputTokens": 46,
+    "reasoningTokens": 41,
+    "totalTokens": 594,
+    "source": "provider_usage"
+  },
+  "cost": {
+    "amountUsd": 0.00004492,
+    "status": "measured",
+    "priceVersion": null,
+    "category": "user_inference"
+  },
+  "originalBytes": 4520,
+  "compiledBytes": 1825,
+  "experimentTotalRequests": 14,
+  "experimentTotalMeasuredCostUsd": 0.0006179999999999998,
+  "experimentTotalAccountedCostUsd": 0.0006180000000000001,
+  "baseline": {
+    "response": "MAGENTA",
+    "usage": {
+      "inputTokens": 1002,
+      "cachedInputTokens": 0,
+      "outputTokens": 48,
+      "reasoningTokens": 44,
+      "totalTokens": 1050,
+      "source": "provider_usage"
+    },
+    "cost": {
+      "amountUsd": 0.00006408,
+      "status": "measured",
+      "priceVersion": null,
+      "category": "user_inference"
+    }
+  },
+  "comparison": {
+    "bothCorrect": true,
+    "bothUncached": true,
+    "savingsPercent": 29.900124843945076,
+    "evidence": "one_additional_pair_candidate_first"
+  }
+}

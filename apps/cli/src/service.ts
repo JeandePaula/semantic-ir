@@ -4,8 +4,8 @@ import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from "nod
 import type { BenchmarkSuite, CalibrationBudget, TaskClass } from "@semantic-ir/core";
 import {
   DEFAULT_CODECS, EvolutionaryOptimizer, OpenAIAdapter,
-  REDUNDANT_EXTRACTION_SUITE, SqliteStore, SYNTHETIC_SUITE, type OpenAIPrice,
-  type OptimizationReport,
+  JSON_EXTRACTION_SUITE, REDUNDANT_EXTRACTION_SUITE, SqliteStore, type OpenAIPrice,
+  type OptimizationReport, type ReasoningEffort,
 } from "@semantic-ir/engine";
 
 export type ProviderId = "openai" | "openrouter";
@@ -55,7 +55,8 @@ export function adapterFor(store: SqliteStore, model: string): OpenAIAdapter {
   const provider = providerFor(store);
   const price = store.getSetting<OpenAIPrice>("price:" + provider + ":" + model) ??
     (provider === "openai" ? store.getSetting<OpenAIPrice>("price:" + model) : null);
-  return new OpenAIAdapter(model, { provider, apiKey: providerKey(provider), price });
+  const reasoningEffort = store.getSetting<ReasoningEffort>("reasoning:" + provider + ":" + model) ?? "default";
+  return new OpenAIAdapter(model, { provider, apiKey: providerKey(provider), price, reasoningEffort });
 }
 
 export async function runCalibration(options: {
@@ -81,8 +82,7 @@ export async function runCalibration(options: {
   }
   const targetStore = options.promote ? options.store : new SqliteStore(":memory:");
   try {
-    const selectedSuite = options.suite ??
-      (provider === "openrouter" ? REDUNDANT_EXTRACTION_SUITE : SYNTHETIC_SUITE);
+    const selectedSuite = options.suite ?? JSON_EXTRACTION_SUITE;
     const seedCodecs = selectedSuite === REDUNDANT_EXTRACTION_SUITE
       ? DEFAULT_CODECS.filter((codec) => codec.id === "context_dedupe") : DEFAULT_CODECS;
     const optimizer = new EvolutionaryOptimizer(adapter, targetStore);

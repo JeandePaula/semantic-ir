@@ -56,7 +56,7 @@ export interface AgentPluginAdapter {
 export interface CodecDefinition {
   readonly schemaVersion: "codec/0.1";
   readonly id: string;
-  readonly strategy: "identity" | "compact_spacing" | "tagged" | "dedupe_context_lines";
+  readonly strategy: "identity" | "compact_spacing" | "tagged" | "dedupe_context_lines" | "compact_json";
   readonly aliases: Partial<Record<keyof SemanticIR, string>>;
   readonly separator: string;
   readonly assignment: string;
@@ -80,6 +80,8 @@ export interface CompiledPrompt {
   readonly codecVersion: string;
   readonly sourceSha256: string;
   readonly literalIds: readonly string[];
+  /** Checked by replaying the entire deterministic transform, never trusted on its own. */
+  readonly transformation?: "json_whitespace";
 }
 
 export interface ModelCapabilities {
@@ -109,6 +111,7 @@ export interface ModelRequest {
   readonly timeoutMs?: number;
   readonly scope?: OptimizationScope;
   readonly metadata?: Readonly<Record<string, string>>;
+  readonly disableResponseCache?: boolean;
 }
 
 export interface UsageMetrics {
@@ -250,6 +253,7 @@ export interface OptimizationInput {
   readonly seeds: readonly CodecVersion[];
   readonly budget: CalibrationBudget;
   readonly maxOutputTokens?: number;
+  readonly minimumSavingsBytes?: number;
 }
 
 export interface OptimizationRun {
@@ -262,7 +266,7 @@ export interface OptimizationRun {
   readonly usedRequests: number;
   readonly usedTokens: number;
   readonly usedCostUsd: number | null;
-  /** Provider-reported cost when available; usedCostUsd remains the preflight reserve. */
+  /** Sum of provider-reported charges when available; usedCostUsd includes unreconciled reserves. */
   readonly measuredCostUsd?: number | null;
   readonly budgetMethod?: "provider_count" | "conservative_byte_envelope";
   readonly status: "running" | "completed" | "budget_exhausted" | "failed";
