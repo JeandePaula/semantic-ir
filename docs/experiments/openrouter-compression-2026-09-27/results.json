@@ -1,0 +1,567 @@
+{
+  "provider": "openrouter",
+  "model": "z-ai/glm-5.3-flash",
+  "startedAt": "2026-09-27T17:43:13.224Z",
+  "status": "stopped",
+  "casesSha256": "93fbce072d235c572d56a4ace6b094624c4e0b7406c043d4a39cc3c6e69f6933",
+  "budget": {
+    "userAuthorizedCostUsd": 0.2,
+    "maxRequests": 16,
+    "maxTokens": 200000,
+    "maxCostUsd": 0.05,
+    "maxDurationMs": 900000
+  },
+  "plan": [
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    },
+    {
+      "caseId": "large-string-id",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "compact",
+        "normal"
+      ]
+    },
+    {
+      "caseId": "filtered-labels",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    },
+    {
+      "caseId": "structured-record",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "compact",
+        "normal"
+      ]
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 2,
+      "order": [
+        "compact",
+        "normal"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:43:13.399Z",
+      "finishedAt": "2026-09-27T17:43:29.609Z",
+      "response": "\"CORAL\"",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 2133,
+        "cachedInputTokens": 0,
+        "outputTokens": 105,
+        "reasoningTokens": 100,
+        "totalTokens": 2238,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.000110685,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 5259,
+      "providerRequestId": "gen-1790531003-ii5Gzksy47XFVIPZ0Lg7",
+      "quality": {
+        "status": "verified",
+        "validator": "exact_json",
+        "reasons": []
+      }
+    },
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:43:29.610Z",
+      "finishedAt": "2026-09-27T17:43:41.439Z",
+      "response": "\"CORAL\"",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 1164,
+        "cachedInputTokens": 0,
+        "outputTokens": 109,
+        "reasoningTokens": 100,
+        "totalTokens": 1273,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00006764,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 13672,
+      "providerRequestId": "gen-1790531007-uY5CWhSTsaCfX99KPr9M",
+      "quality": {
+        "status": "verified",
+        "validator": "exact_json",
+        "reasons": []
+      }
+    },
+    {
+      "caseId": "large-string-id",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:43:41.440Z",
+      "finishedAt": "2026-09-27T17:43:45.656Z",
+      "response": "\"TURQUOISE\"",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 1522,
+        "cachedInputTokens": 0,
+        "outputTokens": 94,
+        "reasoningTokens": 73,
+        "totalTokens": 1616,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00008165,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 4215,
+      "providerRequestId": "gen-1790531020-UPBZBW4wTme48dZx4XYD",
+      "quality": {
+        "status": "verified",
+        "validator": "exact_json",
+        "reasons": []
+      }
+    },
+    {
+      "caseId": "large-string-id",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:43:45.656Z",
+      "finishedAt": "2026-09-27T17:44:00.064Z",
+      "response": "\"TURQUOISE\"",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 2591,
+        "cachedInputTokens": 0,
+        "outputTokens": 191,
+        "reasoningTokens": 147,
+        "totalTokens": 2782,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.000143335,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 3711,
+      "providerRequestId": "gen-1790531034-zWnrpZ8slF7NkuHQycWn",
+      "quality": {
+        "status": "verified",
+        "validator": "exact_json",
+        "reasons": []
+      }
+    },
+    {
+      "caseId": "filtered-labels",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:44:00.064Z",
+      "finishedAt": "2026-09-27T17:44:05.251Z",
+      "response": "[\"Item 0\", \"Item 6\", \"Item 12\", \"Item 18\", \"Item 24\"]",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 2121,
+        "cachedInputTokens": 0,
+        "outputTokens": 394,
+        "reasoningTokens": 290,
+        "totalTokens": 2515,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.000150605,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 7018,
+      "providerRequestId": "gen-1790531038-YRyjrVhF1GeCZTmmMjL8",
+      "quality": {
+        "status": "verified",
+        "validator": "exact_json",
+        "reasons": []
+      }
+    },
+    {
+      "caseId": "filtered-labels",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:44:05.252Z",
+      "finishedAt": "2026-09-27T17:44:23.941Z",
+      "response": "[\"Item 0\", \"Item 6\", \"Item 12\", \"Item 18\", \"Item 24\"]",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 1163,
+        "cachedInputTokens": 0,
+        "outputTokens": 442,
+        "reasoningTokens": 324,
+        "totalTokens": 1605,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.000114215,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 7936,
+      "providerRequestId": "gen-1790531055-Ucg0kO9ZvOXlj1zU2DWD",
+      "quality": {
+        "status": "verified",
+        "validator": "exact_json",
+        "reasons": []
+      }
+    },
+    {
+      "caseId": "structured-record",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:44:23.942Z",
+      "finishedAt": "2026-09-27T17:44:33.119Z",
+      "response": "```json\n{\"id\":\"9007199254740993999\",\"name\":\"São João 東京\",\"enabled\":false,\"roles\":[\"reader\",\"reviewer\"],\"note\":\"Quote: \\\"hello\\\"; path: C:\\\\data\"}\n```",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 1207,
+        "cachedInputTokens": 0,
+        "outputTokens": 274,
+        "reasoningTokens": 193,
+        "totalTokens": 1481,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.000092675,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 11030,
+      "providerRequestId": "gen-1790531062-PPehDXN8llCM32meKR29",
+      "quality": {
+        "status": "rejected",
+        "validator": "exact_json",
+        "reasons": [
+          "invalid_or_ambiguous_json"
+        ]
+      }
+    },
+    {
+      "caseId": "structured-record",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:44:33.119Z",
+      "finishedAt": "2026-09-27T17:44:46.044Z",
+      "response": "```json\n{\n  \"id\": \"9007199254740993999\",\n  \"name\": \"São João 東京\",\n  \"enabled\": false,\n  \"roles\": [\n    \"reader\",\n    \"reviewer\"\n  ],\n  \"note\": \"Quote: \\\"hello\\\"; path: C:\\\\data\"\n}\n```",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 2190,
+        "cachedInputTokens": 0,
+        "outputTokens": 223,
+        "reasoningTokens": 144,
+        "totalTokens": 2413,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00012977,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 12923,
+      "providerRequestId": "gen-1790531072-a2JJVvqc2c9a8qpOVIVu",
+      "quality": {
+        "status": "rejected",
+        "validator": "exact_json",
+        "reasons": [
+          "invalid_or_ambiguous_json"
+        ]
+      }
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:44:46.046Z",
+      "finishedAt": "2026-09-27T17:47:09.063Z",
+      "response": "{\"approved\":[{\"id\":\"O-007\",\"external_ref\":\"90071992547409931007\",\"warehouse\":\"S\",\"gross_cents\":16000,\"discount_cents\":1600,\"net_cents\":14400,\"shipping_cents\":300,\"contribution_cents\":4100},{\"id\":\"O-015\",\"external_ref\":\"90071992547409931015\",\"warehouse\":\"S\",\"gross_cents\":15600,\"discount_cents\":0,\"net_cents\":15600,\"shipping_cents\":300,\"contribution_cents\":7500},{\"id\":\"O-012\",\"external_ref\":\"90071992547409931012\",\"warehouse\":\"N\",\"gross_cents\":10800,\"discount_cents\":0,\"net_cents\":10800,\"shipping_cents\":300,\"contribution_cents\":8100},{\"id\":\"O-014\",\"external_ref\":\"90071992547409931014\",\"warehouse\":\"C\",\"gross_cents\":16000,\"discount_cents\":0,\"net_cents\":16000,\"shipping_cents\":600,\"contribution_cents\":5400},{\"id\":\"O-001\",\"external_ref\":\"90071992547409931001\",\"warehouse\":\"C\",\"gross_cents\":15600,\"discount_cents\":1560,\"net_cents\":14040,\"shipping_cents\":700,\"contribution_cents\":5540},{\"id\":\"O-003\",\"external_ref\":\"90071992547409931003\",\"warehouse\":\"N\",\"gross_cents\":24000,\"discount_cents\":0,\"net_cents\":24000,\"shipping_cents\":300,\"contribution_cents\":9700},{\"id\":\"O-011\",\"external_ref\":\"90071992547409931011\",\"warehouse\":\"S\",\"gross_cents\":10500,\"discount_cents\":0,\"net_cents\":10500,\"shipping_cents\":300,\"contribution_cents\":3900},{\"id\":\"O-002\",\"external_ref\":\"90071992547409931002\",\"warehouse\":\"N\",\"gross_cents\":10500,\"discount_cents\":525,\"net_cents\":9975,\"shipping_cents\":300,\"contribution_cents\":3375}],\"rejected\":[{\"id\":\"O-009\",\"reason\":\"insufficient_stock\"},{\"id\":\"O-005\",\"reason\":\"invalid_item\"},{\"id\":\"O-006\",\"reason\":\"invalid_item\"},{\"id\":\"O-013\",\"reason\":\"invalid_item\"},{\"id\":\"O-008\",\"reason\":\"insufficient_margin\"},{\"id\":\"O-010\",\"reason\":\"insufficient_stock\"}],\"cancelled\":[\"O-004\"],\"superseded_events\":4,\"totals\":{\"approved_count\":8,\"rejected_count\":6,\"gross_cents\":119000,\"discount_cents\":3685,\"net_cents\":115315,\"shipping_cents\":3100,\"contribution_cents\":47615},\"remaining\":{\"N\":{\"AUR\":0,\"BOLT\":1,\"COVE\":1,\"DUNE\":0,\"EMBER\":8},\"S\":{\"AUR\":1,\"BOLT\":0,\"COVE\":0,\"DUNE\":1,\"EMBER\":8},\"C\":{\"AUR\":0,\"BOLT\":3,\"COVE\":0,\"DUNE\":3,\"EMBER\":8}}}",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 4248,
+        "cachedInputTokens": 0,
+        "outputTokens": 6444,
+        "reasoningTokens": 3418,
+        "totalTokens": 10692,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00109332,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 152266,
+      "providerRequestId": "gen-1790531085-ogOt0GagladVT2YoZukE",
+      "quality": {
+        "status": "rejected",
+        "validator": "exact_json",
+        "reasons": [
+          "answer_mismatch"
+        ]
+      }
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:47:09.064Z",
+      "finishedAt": "2026-09-27T17:49:58.202Z",
+      "response": "{\"approved\":[{\"id\":\"O-007\",\"external_ref\":\"90071992547409931007\",\"warehouse\":\"S\",\"gross_cents\":16000,\"discount_cents\":1600,\"net_cents\":14400,\"shipping_cents\":300,\"contribution_cents\":4100},{\"id\":\"O-015\",\"external_ref\":\"90071992547409931015\",\"warehouse\":\"S\",\"gross_cents\":15600,\"discount_cents\":0,\"net_cents\":15600,\"shipping_cents\":300,\"contribution_cents\":7500},{\"id\":\"O-012\",\"external_ref\":\"90071992547409931012\",\"warehouse\":\"N\",\"gross_cents\":10800,\"discount_cents\":0,\"net_cents\":10800,\"shipping_cents\":300,\"contribution_cents\":8100},{\"id\":\"O-014\",\"external_ref\":\"90071992547409931014\",\"warehouse\":\"C\",\"gross_cents\":16000,\"discount_cents\":0,\"net_cents\":16000,\"shipping_cents\":600,\"contribution_cents\":5400},{\"id\":\"O-001\",\"external_ref\":\"90071992547409931001\",\"warehouse\":\"C\",\"gross_cents\":15600,\"discount_cents\":1560,\"net_cents\":14040,\"shipping_cents\":700,\"contribution_cents\":5540},{\"id\":\"O-003\",\"external_ref\":\"90071992547409931003\",\"warehouse\":\"N\",\"gross_cents\":24000,\"discount_cents\":0,\"net_cents\":24000,\"shipping_cents\":300,\"contribution_cents\":9700},{\"id\":\"O-011\",\"external_ref\":\"90071992547409931011\",\"warehouse\":\"S\",\"gross_cents\":10500,\"discount_cents\":0,\"net_cents\":10500,\"shipping_cents\":300,\"contribution_cents\":3900},{\"id\":\"O-002\",\"external_ref\":\"90071992547409931002\",\"warehouse\":\"N\",\"gross_cents\":10500,\"discount_cents\":525,\"net_cents\":9975,\"shipping_cents\":300,\"contribution_cents\":3375}],\"rejected\":[{\"id\":\"O-009\",\"reason\":\"insufficient_stock\"},{\"id\":\"O-005\",\"reason\":\"invalid_item\"},{\"id\":\"O-006\",\"reason\":\"invalid_item\"},{\"id\":\"O-013\",\"reason\":\"invalid_item\"},{\"id\":\"O-008\",\"reason\":\"insufficient_margin\"},{\"id\":\"O-010\",\"reason\":\"insufficient_stock\"}],\"cancelled\":[\"O-004\"],\"superseded_events\":4,\"totals\":{\"approved_count\":8,\"rejected_count\":6,\"gross_cents\":119000,\"discount_cents\":3685,\"net_cents\":115315,\"shipping_cents\":3100,\"contribution_cents\":47615},\"remaining\":{\"N\":{\"AUR\":0,\"BOLT\":1,\"COVE\":1,\"DUNE\":0,\"EMBER\":8},\"S\":{\"AUR\":0,\"BOLT\":0,\"COVE\":0,\"DUNE\":0,\"EMBER\":8},\"C\":{\"AUR\":0,\"BOLT\":3,\"COVE\":0,\"DUNE\":3,\"EMBER\":8}}}",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 2886,
+        "cachedInputTokens": 0,
+        "outputTokens": 7259,
+        "reasoningTokens": 3798,
+        "totalTokens": 10145,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00114613,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 178417,
+      "providerRequestId": "gen-1790531228-vLDAdsa3UrhL9dD6EZoe",
+      "quality": {
+        "status": "rejected",
+        "validator": "exact_json",
+        "reasons": [
+          "answer_mismatch"
+        ]
+      }
+    }
+  ],
+  "attempts": [
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:43:13.399Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:43:29.610Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "large-string-id",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:43:41.440Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "large-string-id",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:43:45.656Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "filtered-labels",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:44:00.064Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "filtered-labels",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:44:05.252Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "structured-record",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:44:23.942Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "structured-record",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:44:33.119Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-27T17:44:46.046Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-27T17:47:09.064Z",
+      "status": "returned"
+    }
+  ],
+  "settings": {
+    "reasoning": "default",
+    "responseCacheDisabled": true,
+    "extractionMaxOutputTokens": 512,
+    "complexMaxOutputTokens": 12288,
+    "temperature": "provider_default",
+    "pairedOrder": "alternating",
+    "stopRule": "Stop after first complex pair with either answer incorrect; stop after a pair with unavailable cost; no profile promotion."
+  },
+  "price": {
+    "version": "openrouter-catalog-6736d0489596",
+    "inputUsdPerMillion": 0.045,
+    "cachedInputUsdPerMillion": 0.045,
+    "outputUsdPerMillion": 0.14
+  },
+  "fingerprint": {
+    "provider": "openrouter",
+    "model": "z-ai/glm-5.3-flash",
+    "snapshot": "z-ai/glm-5.3-flash",
+    "capabilities": {
+      "tokenCounting": false,
+      "reasoningMetadata": true,
+      "structuredOutput": false,
+      "tools": false,
+      "streaming": false,
+      "contextSize": null,
+      "tokenizerId": null
+    },
+    "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1",
+    "observedAt": "2026-09-27T17:43:13.380Z"
+  },
+  "runtimeDecisions": {
+    "nested-color": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    },
+    "large-string-id": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    },
+    "filtered-labels": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    },
+    "structured-record": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    },
+    "complex-allocation": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "high_risk_or_low_classification_confidence",
+      "taskClass": "extraction",
+      "risk": "high",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    }
+  },
+  "profileStatusAfterInspection": {
+    "provider": "openrouter",
+    "model": "z-ai/glm-5.3-flash",
+    "taskClass": "extraction",
+    "fingerprintSha256": "3a2b1fe7a01bc15c0d89ab7af859ed00c25004cfe050ee1ba2757a4527dfb990",
+    "codecId": "json_compact",
+    "status": "needs_reverification",
+    "calibratedAt": "2026-09-26T18:09:02.109Z"
+  },
+  "plannedUpperCostUsd": 0.01750385,
+  "accounting": {
+    "requests": 13,
+    "returnedResponses": 10,
+    "accountedTokens": 88972,
+    "measuredCostUsd": 0.0031300250000000003,
+    "completeMeasuredCostUsd": null,
+    "accountedCostUsd": 0.005625485,
+    "unresolvedReservedCostUsd": 0.00249546,
+    "budgetMethod": "conservative_byte_envelope"
+  },
+  "stopReason": "complex_quality_gate_failed",
+  "finishedAt": "2026-09-27T17:49:58.204Z"
+}

@@ -1,0 +1,146 @@
+{
+  "provider": "openrouter",
+  "model": "z-ai/glm-5.3-flash",
+  "startedAt": "2026-09-27T17:42:26.852Z",
+  "status": "preflight",
+  "casesSha256": "93fbce072d235c572d56a4ace6b094624c4e0b7406c043d4a39cc3c6e69f6933",
+  "budget": {
+    "userAuthorizedCostUsd": 0.2,
+    "maxRequests": 16,
+    "maxTokens": 200000,
+    "maxCostUsd": 0.05,
+    "maxDurationMs": 900000
+  },
+  "plan": [
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    },
+    {
+      "caseId": "large-string-id",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "compact",
+        "normal"
+      ]
+    },
+    {
+      "caseId": "filtered-labels",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    },
+    {
+      "caseId": "structured-record",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "compact",
+        "normal"
+      ]
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 2,
+      "order": [
+        "compact",
+        "normal"
+      ]
+    }
+  ],
+  "results": [],
+  "attempts": [],
+  "settings": {
+    "reasoning": "default",
+    "responseCacheDisabled": true,
+    "extractionMaxOutputTokens": 512,
+    "complexMaxOutputTokens": 12288,
+    "temperature": "provider_default",
+    "pairedOrder": "alternating",
+    "stopRule": "Stop after first complex pair with either answer incorrect; stop after a pair with unavailable cost; no profile promotion."
+  },
+  "price": {
+    "version": "openrouter-catalog-6736d0489596",
+    "inputUsdPerMillion": 0.045,
+    "cachedInputUsdPerMillion": 0.045,
+    "outputUsdPerMillion": 0.14
+  },
+  "fingerprint": {
+    "provider": "openrouter",
+    "model": "z-ai/glm-5.3-flash",
+    "snapshot": "z-ai/glm-5.3-flash",
+    "capabilities": {
+      "tokenCounting": false,
+      "reasoningMetadata": true,
+      "structuredOutput": false,
+      "tools": false,
+      "streaming": false,
+      "contextSize": null,
+      "tokenizerId": null
+    },
+    "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1",
+    "observedAt": "2026-09-27T17:42:27.132Z"
+  },
+  "runtimeDecisions": {
+    "nested-color": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    },
+    "large-string-id": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    },
+    "filtered-labels": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    },
+    "structured-record": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    },
+    "complex-allocation": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "high_risk_or_low_classification_confidence",
+      "taskClass": "extraction",
+      "risk": "high",
+      "fingerprintSha256": "731a62dda6813111008923074b34986f4c35d965f78932e25313d8680e6dc1a1"
+    }
+  },
+  "plannedUpperCostUsd": 0.01750385
+}

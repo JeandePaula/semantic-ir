@@ -1,0 +1,237 @@
+{
+  "provider": "openrouter",
+  "model": "z-ai/glm-5.3-flash",
+  "startedAt": "2026-09-27T17:43:13.224Z",
+  "finishedAt": "2026-09-27T17:49:58.204Z",
+  "status": "stopped",
+  "stopReason": "complex_quality_gate_failed",
+  "settings": {
+    "reasoning": "default",
+    "responseCacheDisabled": true,
+    "extractionMaxOutputTokens": 512,
+    "complexMaxOutputTokens": 12288,
+    "temperature": "provider_default",
+    "pairedOrder": "alternating",
+    "stopRule": "Stop after first complex pair with either answer incorrect; stop after a pair with unavailable cost; no profile promotion."
+  },
+  "budget": {
+    "userAuthorizedCostUsd": 0.2,
+    "maxRequests": 16,
+    "maxTokens": 200000,
+    "maxCostUsd": 0.05,
+    "maxDurationMs": 900000
+  },
+  "accounting": {
+    "requests": 13,
+    "returnedResponses": 10,
+    "accountedTokens": 88972,
+    "measuredCostUsd": 0.0031300250000000003,
+    "completeMeasuredCostUsd": null,
+    "accountedCostUsd": 0.005625485,
+    "unresolvedReservedCostUsd": 0.00249546,
+    "budgetMethod": "conservative_byte_envelope"
+  },
+  "groups": [
+    {
+      "group": "extraction",
+      "versions": {
+        "normal": {
+          "returnedCalls": 4,
+          "fullyCorrect": 3,
+          "incomplete": 0,
+          "inputTokens": 9035,
+          "cachedInputTokens": 0,
+          "outputTokens": 913,
+          "reasoningTokens": 681,
+          "totalTokens": 9948,
+          "measuredCostUsd": 0.000534395,
+          "observedCostPerCorrectReturnedAnswerUsd": 0.0001781317
+        },
+        "compact": {
+          "returnedCalls": 4,
+          "fullyCorrect": 3,
+          "incomplete": 0,
+          "inputTokens": 5056,
+          "cachedInputTokens": 0,
+          "outputTokens": 919,
+          "reasoningTokens": 690,
+          "totalTokens": 5975,
+          "measuredCostUsd": 0.00035618,
+          "observedCostPerCorrectReturnedAnswerUsd": 0.0001187267
+        }
+      },
+      "pairs": [
+        {
+          "caseId": "nested-color",
+          "repetition": 1,
+          "bothReturned": true,
+          "bothCorrect": true,
+          "normalQuality": {
+            "status": "verified",
+            "validator": "exact_json",
+            "reasons": []
+          },
+          "compactQuality": {
+            "status": "verified",
+            "validator": "exact_json",
+            "reasons": []
+          },
+          "costReductionPercent": 38.88964177621178,
+          "verifiedLowerCost": true,
+          "bothUncached": true
+        },
+        {
+          "caseId": "large-string-id",
+          "repetition": 1,
+          "bothReturned": true,
+          "bothCorrect": true,
+          "normalQuality": {
+            "status": "verified",
+            "validator": "exact_json",
+            "reasons": []
+          },
+          "compactQuality": {
+            "status": "verified",
+            "validator": "exact_json",
+            "reasons": []
+          },
+          "costReductionPercent": 43.03554609830118,
+          "verifiedLowerCost": true,
+          "bothUncached": true
+        },
+        {
+          "caseId": "filtered-labels",
+          "repetition": 1,
+          "bothReturned": true,
+          "bothCorrect": true,
+          "normalQuality": {
+            "status": "verified",
+            "validator": "exact_json",
+            "reasons": []
+          },
+          "compactQuality": {
+            "status": "verified",
+            "validator": "exact_json",
+            "reasons": []
+          },
+          "costReductionPercent": 24.162544404236243,
+          "verifiedLowerCost": true,
+          "bothUncached": true
+        },
+        {
+          "caseId": "structured-record",
+          "repetition": 1,
+          "bothReturned": true,
+          "bothCorrect": false,
+          "normalQuality": {
+            "status": "rejected",
+            "validator": "exact_json",
+            "reasons": [
+              "invalid_or_ambiguous_json"
+            ]
+          },
+          "compactQuality": {
+            "status": "rejected",
+            "validator": "exact_json",
+            "reasons": [
+              "invalid_or_ambiguous_json"
+            ]
+          },
+          "costReductionPercent": 28.58518918085844,
+          "verifiedLowerCost": false,
+          "bothUncached": true
+        }
+      ],
+      "completedPairs": 4,
+      "plannedPairs": 4,
+      "qualityPreservedInReturnedPairs": false,
+      "allPlannedPairsCompleted": true,
+      "allReturnedPairsPassQualityAndSavings": false,
+      "inputTokenReductionPercent": 44.03984504703929,
+      "totalTokenReductionPercent": 39.93767591475673,
+      "measuredCostReductionPercent": 33.34892729161014,
+      "successfulTaskSavingsPercent": null
+    },
+    {
+      "group": "complex",
+      "versions": {
+        "normal": {
+          "returnedCalls": 1,
+          "fullyCorrect": 0,
+          "incomplete": 0,
+          "inputTokens": 4248,
+          "cachedInputTokens": 0,
+          "outputTokens": 6444,
+          "reasoningTokens": 3418,
+          "totalTokens": 10692,
+          "measuredCostUsd": 0.00109332,
+          "observedCostPerCorrectReturnedAnswerUsd": null
+        },
+        "compact": {
+          "returnedCalls": 1,
+          "fullyCorrect": 0,
+          "incomplete": 0,
+          "inputTokens": 2886,
+          "cachedInputTokens": 0,
+          "outputTokens": 7259,
+          "reasoningTokens": 3798,
+          "totalTokens": 10145,
+          "measuredCostUsd": 0.00114613,
+          "observedCostPerCorrectReturnedAnswerUsd": null
+        }
+      },
+      "pairs": [
+        {
+          "caseId": "complex-allocation",
+          "repetition": 1,
+          "bothReturned": true,
+          "bothCorrect": false,
+          "normalQuality": {
+            "status": "rejected",
+            "validator": "exact_json",
+            "reasons": [
+              "answer_mismatch"
+            ]
+          },
+          "compactQuality": {
+            "status": "rejected",
+            "validator": "exact_json",
+            "reasons": [
+              "answer_mismatch"
+            ]
+          },
+          "costReductionPercent": -4.830241832217452,
+          "verifiedLowerCost": false,
+          "bothUncached": true
+        },
+        {
+          "caseId": "complex-allocation",
+          "repetition": 2,
+          "bothReturned": false,
+          "bothCorrect": false,
+          "normalQuality": null,
+          "compactQuality": null,
+          "costReductionPercent": null,
+          "verifiedLowerCost": false,
+          "bothUncached": false
+        }
+      ],
+      "completedPairs": 1,
+      "plannedPairs": 2,
+      "qualityPreservedInReturnedPairs": false,
+      "allPlannedPairsCompleted": false,
+      "allReturnedPairsPassQualityAndSavings": false,
+      "inputTokenReductionPercent": 32.06214689265536,
+      "totalTokenReductionPercent": 5.1159745604190014,
+      "measuredCostReductionPercent": -4.830241832217452,
+      "successfulTaskSavingsPercent": null
+    }
+  ],
+  "promoted": false,
+  "limitations": [
+    "Small paired sample; not statistical equivalence or a production guarantee.",
+    "Reasoning/output/cache variation is included in measured total cost; bytes are not tokens.",
+    "Per-version costs cover returned calls only; failed/unknown-billing reservations remain in overall accounting.",
+    "Complex prompts use direct experimental calls; the production risk gate remains unchanged."
+  ]
+}

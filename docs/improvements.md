@@ -1,5 +1,13 @@
 # Diagnóstico e melhorias
 
+## Novo teste pago — 27/09/2026
+
+O usuário autorizou até US$ 0,20. O [reteste OpenRouter](experiments/openrouter-compression-2026-09-27/README.md), com `z-ai/glm-5.3-flash`, adotou teto operacional menor de US$ 0,05 e encerrou após 13 tentativas, dez respostas e três retries por rate limit. Foram US$ 0,003130025 reportados pelo provider e US$ 0,005625485 contabilizados incluindo reservas sem cobrança confirmada.
+
+Quatro pares novos de extração tiveram custo agregado 33,35% menor e 44,04% menos tokens de entrada, com acerto estrito 3/4 em cada versão. Os três primeiros pares estavam completamente corretos. No quarto, os dados estavam corretos, mas ambas as respostas usaram Markdown; essa falha de formato permaneceu reprovada.
+
+No caso complexo, aumentar igualmente o teto de saída para 12.288 eliminou o truncamento, mas não os erros: normal e compactado tiveram 0/1 resposta correta. A compactada ficou **4,83% mais cara**, pois gerou 7.259 tokens de saída contra 6.444 do original. A segunda repetição foi cancelada conforme a regra definida antes das chamadas. Todas as respostas reportaram cache de entrada zero. O preço atual mudou, provocando `needs_reverification` no perfil antigo; nenhum perfil novo foi promovido. A seção [Compression results](../README.md#compression-results) inclui todos os resultados, sem excluir falhas.
+
 ## Correção posterior: execução local e validação da resposta
 
 O teste complexo mostrou que o defeito não estava apenas no compressor: o original também errava contas e alocação. Em 27/09/2026, o fluxo foi simplificado para **operação local explícita → resultado verificado → LLM quando necessário**. A skill orienta essa escolha; código testado aplica as regras. A comparação das técnicas pesquisadas, fontes e limites está em [quality-workflow.md](quality-workflow.md).

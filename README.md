@@ -45,7 +45,26 @@ Contracts are checked before spending. The final answer must match all fields, v
 
 Without a reference, responses are explicitly **unverified**. A reference must itself be trustworthy; copying a model answer into it proves nothing. For open-ended work, use task-specific tests or human-reviewed evaluation. A skill or a valid JSON schema cannot guarantee factual correctness.
 
-## Historical paid compression results
+## Compression results
+
+### Paid retest — September 27, 2026
+
+A new OpenRouter / `z-ai/glm-5.3-flash` run tested four fresh extraction inputs and one returned pair of the complex allocation task. All ten returned responses reported **zero cached input tokens**. Normal and compressed requests used the same settings within each pair.
+
+| Workload | Original input tokens | Compressed input tokens | Original cost | Compressed cost | Cost change | Strict correctness |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| Four extraction pairs | 9,035 | 5,056 | $0.000534395 | $0.000356180 | **33.35% lower** | **3/4 on each side**; the fourth used Markdown fences |
+| Complex allocation, one pair | 4,248 | 2,886 | $0.001093320 | $0.001146130 | **4.83% higher** | **0/1 on each side**; ordering/allocation/totals errors |
+
+The first three extraction pairs were fully correct on both sides, with individual cost reductions of **38.89%, 43.04%, and 24.16%**. The fourth preserved the object contents, including Unicode and escaped text, but both answers violated the raw-JSON output contract. Removing a single Markdown fence verified the contents as a supplementary diagnostic; it did **not** change the primary failure result.
+
+For the complex task, output grew from **6,444 to 7,259 tokens**, outweighing the input savings in dollar cost. Neither answer was truncated at the new 12,288-token cap, yet both failed the independent reference. The planned second repetition was skipped under the predefined stop rule. **Neither complete workload passed the combined correctness and savings gate; no profile was promoted.**
+
+The run made **13 provider attempts**, including three rate-limit retries, and received ten answers. Provider-reported charges total **$0.003130025**. An additional **$0.002495460** remains conservatively reserved for attempts without reported billing, for **$0.005625485 accounted**, below the user's $0.20 authorization and the run's lower $0.05 cap. These per-version costs cover returned answers; reserves are included only in the overall accounting. The current catalog price differs from the earlier run, and the old profile was marked `needs_reverification` on fingerprint drift.
+
+See the [full retest report](docs/experiments/openrouter-compression-2026-09-27/README.md), [computed metrics](docs/experiments/openrouter-compression-2026-09-27/summary.json), and [raw responses/accounting](docs/experiments/openrouter-compression-2026-09-27/results.json). This small sample supports the three successful extraction pairs, not a general quality or production-savings guarantee.
+
+### Earlier paid experiments
 
 These are small experiments with **OpenRouter / `z-ai/glm-5.3-flash`**, run on September 26, 2026. They are not a claim of universal savings or statistical equivalence.
 
@@ -193,6 +212,7 @@ npm run audit:savings
 node docs/experiments/complex-json/prepare.mjs
 node docs/experiments/complex-json/summarize.mjs
 npm run verify:local
+node docs/experiments/openrouter-compression-2026-09-27/verify.mjs
 ```
 
 These checks are local and do not make paid calls. The complex experiment includes its full prompt, reference solver, evaluator, raw responses, and budget accounting. Its paid runner requires `--allow-spend` and refuses to overwrite existing results.
