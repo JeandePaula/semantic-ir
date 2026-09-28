@@ -11,6 +11,7 @@ import {
   executeLocalTask, parseStrictJson, prepareResponseValidator, ResponseContractSchema, ResponseQualityError,
   hasScorableOracle,
   compileJsonQuery,
+  prepareJsonOutput,
 } from "@semantic-ir/engine";
 import { createGateway } from "./gateway.js";
 import { integrationReport } from "./hosts.js";
@@ -27,6 +28,8 @@ const option = (name: string): string | undefined => {
   return index >= 0 ? argv[index + 1] : undefined;
 };
 const has = (name: string): boolean => argv.includes("--" + name);
+const outputShape = () => has("output-shape")
+  ? prepareJsonOutput(parseStrictJson(readFileSync(required("output-shape"), "utf8"))).shape : undefined;
 const required = (name: string): string => {
   const value = option(name);
   if (!value || value.startsWith("--")) throw new Error("Missing --" + name);
@@ -159,8 +162,9 @@ async function main(): Promise<void> {
         "plan --file QUERY.json (inspect an explicit json_query_v1 program locally)",
         "execute --kind order_allocation_v1 --file INPUT.json [--out ANSWER.json]",
         "verify --contract CONTRACT.json --file ANSWER (local answer verification)",
-        "invoke --allow-spend --max-output-tokens N --prompt PROMPT [--contract CONTRACT.json]",
+        "invoke --allow-spend --max-output-tokens N --prompt PROMPT [--contract CONTRACT.json] [--output-shape SHAPE.json]",
         "calibrate|benchmark|optimize --model MODEL --allow-spend --max-requests N --max-tokens N --max-cost-usd N --max-duration-ms N [--suite redundant-extraction] [--max-output-tokens N]",
+        "--output-shape SHAPE.json is OpenRouter-only; calibration needs compatible exact_json oracles in a custom --suite",
         "calibration report [--model MODEL]", "metrics",
         "rollback --provider openai|openrouter --model MODEL --task TASK",
         "proxy --port 8787", "mcp", "integrations list|status|doctor|build [--wsl-distro NAME]",
@@ -256,7 +260,7 @@ async function main(): Promise<void> {
       const selectedModel = model(store);
       if (!selectedModel) throw new Error("Set --model or run configure");
       const prompt = required("prompt");
-      const adapter = adapterFor(store, selectedModel);
+      const adapter = adapterFor(store, selectedModel, outputShape());
       const router = new RuntimeRouter(adapter, store);
       const routed = await router.invoke(prompt, {
         scope: "application_request", maxOutputTokens: positiveInteger("max-output-tokens"),
@@ -270,6 +274,7 @@ async function main(): Promise<void> {
         cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
         decision: routed.decision,
         quality: routed.quality,
+        outputProtocol: routed.response.structuredOutput?.protocol ?? null,
       });
       return;
     }
@@ -299,10 +304,12 @@ async function main(): Promise<void> {
       if (!selectedModel) throw new Error("Set --model or run configure");
       if (!has("allow-spend")) throw new Error("Paid calls require --allow-spend");
       const taskClass = TaskClassSchema.parse(option("task") ?? "extraction");
+      const shape = outputShape();
       const report = await runCalibration({
         store, model: selectedModel, budget: budget(), taskClass,
         ...(option("suite") ? { suite: suite() } : {}),
         ...(option("max-output-tokens") ? { maxOutputTokens: positiveInteger("max-output-tokens") } : {}),
+        ...(shape ? { outputShape: shape } : {}),
         allowSpend: true, promote: command !== "benchmark",
       });
       print(report);

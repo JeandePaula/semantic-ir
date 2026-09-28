@@ -17,6 +17,8 @@ Prefer the cheapest route that meets the user's actual correctness requirement. 
 
 Use `invoke_prompt` within the user's existing spending authorization, with `allowSpend: true` and positive `maxOutputTokens`. If an independent exact reference exists, pass `responseContract` (`exact_text` or `exact_json`); see [contracts](references/contracts.md). Do not pay a model merely to reproduce an answer already computable locally unless the user requested a comparison.
 
+For an OpenRouter call requiring a specific JSON type, explicitly supply `outputShape` as described in the contracts reference. It requests provider-side structure in addition to local answer verification. It changes the transport/fingerprint and adds billable overhead; old ordinary-text profiles do not establish savings for it. Do not claim schema support or factual correctness from the model name alone.
+
 Inspect `quality`. `verified` means the supplied reference matched, `unverified` means no reference was available. Contract mismatches and known incomplete responses return an error with usage/cost, not a deliverable answer. Do not silently retry, truncate output further, or substitute an unverified response to make the run look successful. Use a local repair only when it implements the complete known contract and verify it independently.
 
 For open-ended prose or code, use task-specific tests or a human-reviewed rubric. Do not claim an exact guarantee, semantic equivalence, or token savings without evidence. A schema-valid JSON answer may still contain wrong calculations.

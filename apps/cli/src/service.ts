@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import type { BenchmarkSuite, CalibrationBudget, TaskClass } from "@semantic-ir/core";
+import type { BenchmarkSuite, CalibrationBudget, JsonOutputShape, TaskClass } from "@semantic-ir/core";
 import {
   DEFAULT_CODECS, EvolutionaryOptimizer, OpenAIAdapter,
   JSON_EXTRACTION_SUITE, REDUNDANT_EXTRACTION_SUITE, SqliteStore, type OpenAIPrice,
@@ -51,12 +51,13 @@ export function openStore(): SqliteStore {
   return new SqliteStore(databasePath());
 }
 
-export function adapterFor(store: SqliteStore, model: string): OpenAIAdapter {
+export function adapterFor(store: SqliteStore, model: string, outputShape?: JsonOutputShape): OpenAIAdapter {
   const provider = providerFor(store);
   const price = store.getSetting<OpenAIPrice>("price:" + provider + ":" + model) ??
     (provider === "openai" ? store.getSetting<OpenAIPrice>("price:" + model) : null);
   const reasoningEffort = store.getSetting<ReasoningEffort>("reasoning:" + provider + ":" + model) ?? "default";
-  return new OpenAIAdapter(model, { provider, apiKey: providerKey(provider), price, reasoningEffort });
+  return new OpenAIAdapter(model, { provider, apiKey: providerKey(provider), price, reasoningEffort,
+    ...(outputShape === undefined ? {} : { outputShape }) });
 }
 
 export async function runCalibration(options: {
@@ -68,14 +69,15 @@ export async function runCalibration(options: {
   allowSpend: boolean;
   promote: boolean;
   maxOutputTokens?: number;
+  outputShape?: JsonOutputShape;
 }): Promise<OptimizationReport> {
   if (!options.allowSpend) throw new Error("Calibration requires explicit allowSpend=true");
-  let adapter = adapterFor(options.store, options.model);
+  let adapter = adapterFor(options.store, options.model, options.outputShape);
   const provider = providerFor(options.store);
   if (provider === "openrouter") {
     const price = await adapter.discoverOpenRouterPrice();
     options.store.setSetting("price:openrouter:" + options.model, price);
-    adapter = adapterFor(options.store, options.model);
+    adapter = adapterFor(options.store, options.model, options.outputShape);
   }
   if (!adapter.getCapabilities().tokenCounting && provider !== "openrouter") {
     throw new Error("Calibration unavailable: provider has no budget preflight");

@@ -47,6 +47,10 @@ Without a reference, responses are explicitly **unverified**. A reference must i
 
 If the application accepts a single JSON Markdown fence, declare `"normalization":"single_json_fence"` in the `exact_json` contract before inference. The complete contents must still match. Default validation remains strict raw JSON. SDK `outputText` contains the validated presentation and `response.text` retains the raw provider answer; CLI/MCP report normalization metadata.
 
+To request the output shape **during generation**, OpenRouter calls now accept an explicit `outputShape`, such as `{"type":"string"}`. CLI: add `--output-shape docs/examples/string-output-shape.json`; MCP: pass `invoke_prompt.outputShape`; SDK: pass it to `OpenAIAdapter`. The adapter requests strict structured output, validates its declared `value` envelope locally, then verifies the decoded answer against the independent reference. Shape validity alone is not answer correctness. The schema contains no expected answer, its overhead is budgeted, and its protocol participates in calibration fingerprints. See [native output contracts](docs/native-output-contracts.md) for usage and limits.
+
+A compiled runtime answer that fails quality validation now marks its profile `needs_reverification`, records the bill, and returns an error without a paid retry. The next request uses the original pending recalibration. This correction passed 155 offline tests, including the captured failure and CLI/MCP propagation; the new native protocol has **not** been paid-tested and makes no new savings claim.
+
 ## Compression results
 
 ### Paid response retest — September 28, 2026

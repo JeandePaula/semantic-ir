@@ -6,7 +6,7 @@ import type { TaskClass } from "@semantic-ir/core";
 import { auditPrompt, compilePrompt, DEFAULT_CODECS, diagnoseReport, JSON_EXTRACTION_SUITE, REDUNDANT_EXTRACTION_SUITE,
   RuntimeRouter, SYNTHETIC_SUITE, validateCompiled, executeLocalTask, LocalTaskSchema,
   ResponseContractSchema, prepareResponseValidator, ResponseQualityError,
-  JsonQuerySchema, compileJsonQuery } from "@semantic-ir/engine";
+  JsonQuerySchema, compileJsonQuery, JsonOutputShapeSchema } from "@semantic-ir/engine";
 import { adapterFor, openStore, providerFor, providerKey, runCalibration } from "./service.js";
 
 const result = (value: unknown) => ({
@@ -98,19 +98,19 @@ export async function startMcpServer(): Promise<void> {
 
   server.registerTool("get_runtime_decision", {
     description: "Predict local routing without calling a provider.",
-    inputSchema: { prompt: z.string().min(1), model: z.string().min(1) },
+    inputSchema: { prompt: z.string().min(1), model: z.string().min(1), outputShape: JsonOutputShapeSchema.optional() },
     annotations: { readOnlyHint: true },
-  }, async ({ prompt, model }) => {
-    const router = new RuntimeRouter(adapterFor(store, model), store);
+  }, async ({ prompt, model, outputShape }) => {
+    const router = new RuntimeRouter(adapterFor(store, model, outputShape), store);
     return result((await router.decide(prompt)).decision);
   });
 
   server.registerTool("explain_fallback", {
     description: "Explain why a prompt would use the original request.",
-    inputSchema: { prompt: z.string().min(1), model: z.string().min(1) },
+    inputSchema: { prompt: z.string().min(1), model: z.string().min(1), outputShape: JsonOutputShapeSchema.optional() },
     annotations: { readOnlyHint: true },
-  }, async ({ prompt, model }) => {
-    const router = new RuntimeRouter(adapterFor(store, model), store);
+  }, async ({ prompt, model, outputShape }) => {
+    const router = new RuntimeRouter(adapterFor(store, model, outputShape), store);
     return result((await router.decide(prompt)).decision);
   });
 
@@ -132,12 +132,13 @@ export async function startMcpServer(): Promise<void> {
       allowSpend: z.literal(true),
       maxOutputTokens: z.number().int().positive(),
       responseContract: ResponseContractSchema.optional(),
+      outputShape: JsonOutputShapeSchema.optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-  }, async ({ prompt, model, maxOutputTokens, responseContract }) => {
+  }, async ({ prompt, model, maxOutputTokens, responseContract, outputShape }) => {
     const selectedModel = model ?? store.getSetting<string>("defaultModel");
     if (!selectedModel) throw new Error("Configure a model first with semantic-ir configure");
-    const adapter = adapterFor(store, selectedModel);
+    const adapter = adapterFor(store, selectedModel, outputShape);
     try {
       const routed = await new RuntimeRouter(adapter, store).invoke(prompt, {
         scope: "downstream_llm_call", maxOutputTokens,
@@ -150,6 +151,7 @@ export async function startMcpServer(): Promise<void> {
         cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
         decision: routed.decision,
         quality: routed.quality,
+        outputProtocol: routed.response.structuredOutput?.protocol ?? null,
       });
     } catch (error) {
       if (!(error instanceof ResponseQualityError)) throw error;

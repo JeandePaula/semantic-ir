@@ -1,5 +1,11 @@
 # Diagnóstico e melhorias
 
+## Falha string versus objeto — correção posterior ao reteste
+
+O teste pago de 28/09 devolveu `"CORAL"` no original e um objeto no compactado. A instrução de retornar string foi preservada; o problema observado foi descumprimento do formato, sem prova de causa em uma única amostra. A [correção](native-output-contracts.md) acrescenta `outputShape` opcional para OpenRouter: schema nativo, envelope validado, gabarito apenas local, orçamento incluindo overhead e fingerprint específico. Uma resposta compactada rejeitada agora retira o perfil do estado estável até reverificação.
+
+A validação tem 155 testes offline, inclusive propagação por CLI/MCP e a resposta real que falhou. Não houve novo teste pago desse protocolo nem alteração das métricas históricas.
+
 ## Revisão de custo e compilação — 28/09/2026
 
 A [análise completa](semantic-compilation.md) explica o aumento de 4,83%: a entrada economizou US$ 0,000061290, mas a saída acrescentou US$ 0,000114100. As duas respostas complexas também inverteram a direção da prioridade na lista de aprovados. A revisão acrescenta consultas locais declarativas, oracles JSON, normalização opcional e estrita de uma única cerca Markdown, interrupção antes da chamada candidata quando o original falha, classificação fora de literais e inspeção de perfis sem mutação.

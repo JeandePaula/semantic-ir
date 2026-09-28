@@ -4,7 +4,7 @@ import type {
 } from "@semantic-ir/core";
 import { analyzePrompt } from "@semantic-ir/core";
 import { compilePrompt } from "./codec.js";
-import { evaluateCase, hasScorableOracle, prepareCaseOracle } from "./evaluator.js";
+import { evaluateCase, hasScorableOracle, prepareCaseOracle, validateCaseOutputShape } from "./evaluator.js";
 
 const unscoredCases: BenchmarkCase[] = [
   ["instruction_following", "reasoning", "Follow these instructions in order: greet, then count."],
@@ -266,6 +266,7 @@ export async function benchmarkCodec(options: {
     (item) => item.split === options.split && item.taskClass === options.taskClass &&
       hasScorableOracle(item));
   const oracles = cases.map(prepareCaseOracle);
+  for (const testCase of cases) validateCaseOutputShape(testCase, options.adapter.outputShape);
   for (const [index, testCase] of cases.entries()) {
     const ir = analyzePrompt(testCase.prompt);
     const compiled = compilePrompt(ir, options.codec);

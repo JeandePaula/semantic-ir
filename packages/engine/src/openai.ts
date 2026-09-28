@@ -2,7 +2,9 @@ import { sha256 } from "@semantic-ir/semantic-ir";
 import type {
   BudgetPreflight, CostMetrics, ModelAdapter, ModelCapabilities, ModelFingerprint,
   ModelRequest, ModelResponse, TokenCount, UsageMetrics,
+  JsonOutputShape,
 } from "@semantic-ir/core";
+import { JSON_OUTPUT_INSTRUCTION, prepareJsonOutput } from "./output.js";
 
 export interface OpenAIPrice {
   readonly version: string;
@@ -47,6 +49,8 @@ export class OpenAIAdapter implements ModelAdapter {
   private readonly apiKey: string;
   private readonly price: OpenAIPrice | null;
   private readonly reasoningEffort: ReasoningEffort;
+  private readonly jsonOutput: ReturnType<typeof prepareJsonOutput> | null;
+  get outputShape(): JsonOutputShape | null { return this.jsonOutput?.shape ?? null; }
   readonly provider: "openai" | "openrouter";
 
   constructor(readonly model: string, options: {
@@ -55,6 +59,7 @@ export class OpenAIAdapter implements ModelAdapter {
     price?: OpenAIPrice | null;
     provider?: "openai" | "openrouter";
     reasoningEffort?: ReasoningEffort;
+    outputShape?: JsonOutputShape;
   } = {}) {
     this.provider = options.provider ?? "openai";
     this.apiKey = options.apiKey ?? (this.provider === "openrouter"
@@ -66,6 +71,10 @@ export class OpenAIAdapter implements ModelAdapter {
     if (this.provider !== "openrouter" && this.reasoningEffort !== "default") {
       throw new Error("Reasoning configuration currently requires OpenRouter");
     }
+    if (options.outputShape !== undefined && this.provider !== "openrouter") {
+      throw new Error("Native output shapes currently require OpenRouter; refusing to ignore the contract");
+    }
+    this.jsonOutput = options.outputShape === undefined ? null : prepareJsonOutput(options.outputShape);
     this.resolvedModel = model;
   }
 
@@ -129,7 +138,9 @@ export class OpenAIAdapter implements ModelAdapter {
     if (this.provider !== "openrouter" || !this.price || !request.maxOutputTokens) return null;
     // Includes generous room for chat framing. Checked against provider usage after each call.
     // This is a conservative estimate, not a verified tokenizer or a hard provider guarantee.
-    const upperInputTokens = 256 + 2 * Buffer.byteLength(request.prompt, "utf8");
+    const formatBytes = this.jsonOutput ? Buffer.byteLength(JSON_OUTPUT_INSTRUCTION, "utf8") +
+      Buffer.byteLength(JSON.stringify(this.jsonOutput.responseFormat), "utf8") : 0;
+    const upperInputTokens = 256 + 2 * (Buffer.byteLength(request.prompt, "utf8") + formatBytes);
     return {
       upperInputTokens,
       upperCostUsd: (upperInputTokens * this.price.inputUsdPerMillion +
@@ -158,13 +169,18 @@ export class OpenAIAdapter implements ModelAdapter {
     if (this.provider === "openrouter") {
       const response = await this.request("/v1/chat/completions", {
         model: request.model,
-        messages: [{ role: "user", content: request.prompt }],
+        messages: [
+          ...(this.jsonOutput ? [{ role: "system", content: JSON_OUTPUT_INSTRUCTION }] : []),
+          { role: "user", content: request.prompt },
+        ],
+        ...(this.jsonOutput ? { response_format: this.jsonOutput.responseFormat } : {}),
         usage: { include: true },
         ...(this.reasoningEffort === "default" ? {} : { reasoning: { effort: this.reasoningEffort } }),
-        ...(this.price ? { provider: { max_price: {
-          prompt: this.price.inputUsdPerMillion,
-          completion: this.price.outputUsdPerMillion,
-        } } } : {}),
+        ...(this.price || this.jsonOutput ? { provider: {
+          ...(this.jsonOutput ? { require_parameters: true } : {}),
+          ...(this.price ? { max_price: { prompt: this.price.inputUsdPerMillion,
+            completion: this.price.outputUsdPerMillion } } : {}),
+        } } : {}),
         ...(request.maxOutputTokens === undefined ? {} : { max_tokens: request.maxOutputTokens }),
       }, request.timeoutMs, request.disableResponseCache);
       const body = await response.json() as ChatResponseJson;
@@ -174,6 +190,7 @@ export class OpenAIAdapter implements ModelAdapter {
       const usage = body.usage;
       return {
         text: typeof content === "string" ? content : "",
+        ...(this.jsonOutput ? { structuredOutput: this.jsonOutput.decode(typeof content === "string" ? content : "") } : {}),
         completionStatus: typeof content !== "string" || !content.trim() ? "incomplete" :
           finishReason === "stop" ? "completed" : finishReason == null ? "unavailable" : "incomplete",
         usage: {
@@ -251,7 +268,7 @@ export class OpenAIAdapter implements ModelAdapter {
 
   getCapabilities(): ModelCapabilities {
     return {
-      tokenCounting: this.provider === "openai", reasoningMetadata: true, structuredOutput: false,
+      tokenCounting: this.provider === "openai", reasoningMetadata: true, structuredOutput: this.jsonOutput !== null,
       tools: false, streaming: false, contextSize: null, tokenizerId: null,
     };
   }
@@ -264,6 +281,7 @@ export class OpenAIAdapter implements ModelAdapter {
         provider: this.provider, model: this.model, snapshot: this.resolvedModel, capabilities,
         price: this.price,
         ...(this.reasoningEffort === "default" ? {} : { reasoningEffort: this.reasoningEffort }),
+        ...(this.jsonOutput ? { outputProtocol: "json-envelope/1", outputShapeSha256: this.jsonOutput.shapeSha256 } : {}),
       })),
       observedAt: new Date().toISOString(),
     };

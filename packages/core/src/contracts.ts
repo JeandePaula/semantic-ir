@@ -133,6 +133,14 @@ export interface CostMetrics {
 
 export interface ModelResponse {
   readonly text: string;
+  /** Raw text stays above; only an explicitly requested, validated wire envelope is decoded. */
+  readonly structuredOutput?: {
+    readonly protocol: "json-envelope/1";
+    readonly shapeSha256: string;
+    readonly status: "valid" | "invalid";
+    readonly outputText: string | null;
+    readonly reasons: readonly string[];
+  };
   readonly completionStatus?: "completed" | "incomplete" | "unavailable";
   readonly usage: UsageMetrics;
   readonly cost?: CostMetrics;
@@ -160,6 +168,8 @@ export interface BudgetPreflight {
 }
 
 export interface ModelAdapter {
+  /** Fixed per adapter and included in its fingerprint; absent means ordinary text transport. */
+  readonly outputShape?: JsonOutputShape | null;
   invoke(request: ModelRequest): Promise<ModelResponse>;
   stream?(request: ModelRequest): AsyncIterable<ModelStreamEvent>;
   countTokens?(request: ModelRequest): Promise<TokenCount | null>;
@@ -168,6 +178,12 @@ export interface ModelAdapter {
   getCapabilities(): ModelCapabilities;
   getModelFingerprint(): Promise<ModelFingerprint>;
 }
+
+/** Small, strict JSON shape language. No answer values, examples, enums or executable expressions. */
+export type JsonOutputShape =
+  | { readonly type: "string" | "number" | "integer" | "boolean" | "null" }
+  | { readonly type: "array"; readonly items: JsonOutputShape }
+  | { readonly type: "object"; readonly properties: Readonly<Record<string, JsonOutputShape>> };
 
 export interface TokenAccountingAdapter {
   count(request: ModelRequest): Promise<TokenCount | null>;

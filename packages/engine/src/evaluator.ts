@@ -1,7 +1,16 @@
-import type { BenchmarkCase, EvaluationResult, ModelResponse, SemanticIR } from "@semantic-ir/core";
+import type { BenchmarkCase, EvaluationResult, JsonOutputShape, ModelResponse, SemanticIR } from "@semantic-ir/core";
 import type { CompiledPrompt } from "@semantic-ir/core";
 import { validateCompiled } from "./codec.js";
-import { prepareResponseValidator } from "./quality.js";
+import { parseStrictJson, prepareResponseValidator } from "./quality.js";
+import { matchesOutputShape, modelOutputText } from "./output.js";
+
+export function validateCaseOutputShape(testCase: BenchmarkCase, shape?: JsonOutputShape | null): void {
+  if (!shape) return;
+  if (testCase.oracleId !== "exact_json" || testCase.expectedOutput === undefined ||
+      !matchesOutputShape(parseStrictJson(testCase.expectedOutput), shape)) {
+    throw new Error("Native output shape requires compatible exact_json oracles: " + testCase.id);
+  }
+}
 
 export function hasScorableOracle(testCase: BenchmarkCase): boolean {
   return testCase.expectedOutput !== undefined && ["exact", "exact_json"].includes(testCase.oracleId ?? "");
@@ -12,8 +21,11 @@ export function prepareCaseOracle(testCase: BenchmarkCase): (response: ModelResp
   if (!hasScorableOracle(testCase)) return () => false;
   const verify = testCase.oracleId === "exact_json"
     ? prepareResponseValidator({ kind: "exact_json", expected: testCase.expectedOutput! }) : null;
-  return response => response.completionStatus !== "incomplete" &&
-    (verify ? verify(response.text).status === "verified" : response.text.trim() === testCase.expectedOutput);
+  return response => {
+    const text = modelOutputText(response);
+    return response.completionStatus !== "incomplete" && text !== null &&
+      (verify ? verify(text).status === "verified" : text.trim() === testCase.expectedOutput);
+  };
 }
 
 /**
@@ -45,7 +57,8 @@ export function evaluateCase(
   const baselineSuccess = verify(baseline);
   const candidateSuccess = candidate !== null && verify(candidate);
   const behaviorSame = candidate !== null && (testCase.oracleId === "exact_json"
-    ? baselineSuccess && candidateSuccess : baseline.text.trim() === candidate.text.trim());
+    ? baselineSuccess && candidateSuccess : modelOutputText(baseline) !== null &&
+      modelOutputText(baseline)?.trim() === modelOutputText(candidate)?.trim());
   const passedHardGates = failures.length === 0 && baselineSuccess && candidateSuccess && behaviorSame;
   return {
     caseId: testCase.id,

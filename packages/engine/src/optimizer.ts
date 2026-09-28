@@ -8,7 +8,7 @@ import { benchmarkCodec, BudgetLedger, type CaseResult } from "./benchmark.js";
 import { compilePrompt } from "./codec.js";
 import { MINIMUM_SAVINGS_BYTES } from "./audit.js";
 import type { SqliteStore } from "./storage.js";
-import { hasScorableOracle, prepareCaseOracle } from "./evaluator.js";
+import { hasScorableOracle, prepareCaseOracle, validateCaseOutputShape } from "./evaluator.js";
 
 function codecVersion(definition: CodecDefinition): CodecVersion {
   return {
@@ -130,7 +130,10 @@ export class EvolutionaryOptimizer implements Optimizer {
     try {
       const scored = input.suite.cases.filter((item) => item.taskClass === input.taskClass &&
         hasScorableOracle(item));
-      for (const item of scored) prepareCaseOracle(item);
+      for (const item of scored) {
+        prepareCaseOracle(item);
+        validateCaseOutputShape(item, this.adapter.outputShape);
+      }
       if (new Set(scored.map((item) => item.id)).size !== scored.length ||
           new Set(scored.map((item) => item.prompt)).size !== scored.length) {
         throw new Error("Scored cases require distinct ids and prompts across splits");

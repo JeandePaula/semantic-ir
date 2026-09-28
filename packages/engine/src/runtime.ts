@@ -7,6 +7,8 @@ import type {
 import { compilePrompt } from "./codec.js";
 import type { SqliteStore } from "./storage.js";
 import { prepareResponseProcessor, type QualityResult, type ResponseContract } from "./quality.js";
+import { parseStrictJson } from "./quality.js";
+import { matchesOutputShape, modelOutputText } from "./output.js";
 
 export interface RoutedResponse {
   readonly response: ModelResponse;
@@ -85,6 +87,12 @@ export class RuntimeRouter {
     responseContract?: ResponseContract;
   } = {}): Promise<RoutedResponse> {
     const processResponse = prepareResponseProcessor(options.responseContract);
+    if (this.adapter.outputShape && options.responseContract) {
+      if (options.responseContract.kind !== "exact_json" ||
+          !matchesOutputShape(parseStrictJson(options.responseContract.expected), this.adapter.outputShape)) {
+        throw new Error("Response reference contradicts the native JSON output shape");
+      }
+    }
     const route = await this.decide(prompt);
     const fingerprint = await this.adapter.getModelFingerprint();
     if (route.decision.fallbackReason === "model_fingerprint_changed") {
@@ -106,11 +114,21 @@ export class RuntimeRouter {
       codecId: decision.codecVersion, fallbackReason: decision.fallbackReason,
       usage: response.usage, cost, latencyMs: response.latencyMs,
     });
-    const processed = processResponse(response.text);
+    const outputText = modelOutputText(response);
+    const processed = processResponse(outputText ?? "");
     const quality: QualityResult = response.completionStatus === "incomplete" || !response.text.trim()
       ? { status: "rejected", validator: options.responseContract?.kind ?? null, reasons: ["incomplete_response"] }
-      : processed.quality;
-    if (quality.status === "rejected") throw new ResponseQualityError(quality, response.usage, cost, decision);
+      : outputText === null
+        ? { status: "rejected", validator: options.responseContract?.kind ?? null,
+            reasons: response.structuredOutput?.reasons ?? ["invalid_structured_output"] }
+        : processed.quality;
+    if (quality.status === "rejected") {
+      if (decision.mode === "compiled") {
+        // Pause a profile after observed rejection. No second paid call is made here.
+        this.store.markDrift(fingerprint.provider, fingerprint.model, decision.taskClass);
+      }
+      throw new ResponseQualityError(quality, response.usage, cost, decision);
+    }
     let structuredResult: unknown = null;
     if (options.mode === "structured") {
       try { structuredResult = JSON.parse(processed.outputText) as unknown; } catch { /* unavailable */ }

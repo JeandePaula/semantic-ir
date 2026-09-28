@@ -4,9 +4,32 @@ import { parseStrictJson, prepareResponseValidator, prepareResponseProcessor } f
 import { RuntimeRouter, ResponseQualityError } from "./runtime.js";
 import { OpenAIAdapter } from "./openai.js";
 import { SqliteStore } from "./storage.js";
+import { DEFAULT_CODECS } from "./codec.js";
 
 describe("answer contracts", () => {
   afterEach(() => vi.unstubAllGlobals());
+  it("quarantines a compiled profile after a contract failure without retrying or altering read-only inspection", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ model: "test",
+      choices: [{ finish_reason: "stop", message: { content: '{"launch":{"color":"CORAL"}}' } }],
+      usage: { prompt_tokens: 1164, completion_tokens: 10, cost: 0.0001796 },
+    }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const store = new SqliteStore(":memory:");
+    const adapter = new OpenAIAdapter("test", { provider: "openrouter", apiKey: "fixture" });
+    try {
+      store.promote(await adapter.getModelFingerprint(), "extraction", DEFAULT_CODECS.find(codec => codec.id === "json_compact")!);
+      const router = new RuntimeRouter(adapter, store);
+      const prompt = 'Extract launch.color. Respond with only a JSON string.\n{ "launch": { "color": "CORAL" } }';
+      expect((await router.decide(prompt)).decision.mode).toBe("compiled");
+      await expect(router.invoke(prompt, { responseContract: { kind: "exact_json", expected: '"CORAL"' } }))
+        .rejects.toBeInstanceOf(ResponseQualityError);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(store.metricsSummary()).toMatchObject({ requests: 1, measuredCostUsd: 0.0001796 });
+      expect(store.getProfile("openrouter", "test", "extraction")?.status).toBe("needs_reverification");
+      expect((await router.decide(prompt)).decision.fallbackReason).toBe("profile_needs_reverification");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally { store.close(); }
+  });
   it("unwraps only an explicitly allowed single JSON fence and still validates every value", () => {
     const process = prepareResponseProcessor({ kind: "exact_json", expected: '{"a":1}', normalization: "single_json_fence" });
     expect(process('```json\n{"a":1}\n```')).toMatchObject({ outputText: '{"a":1}',

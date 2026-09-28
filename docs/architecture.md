@@ -4,6 +4,8 @@ O caminho preferido para tarefas determinísticas suportadas é `contrato estrut
 
 O runtime de LLM também aceita um `responseContract` independente, preparado antes de inferência. Respostas divergentes, vazias ou sabidamente incompletas são rejeitadas após registrar usage/custo disponível. Sem contrato, a qualidade é `unverified`. CLI/MCP expõem execução e verificação locais; o gateway básico expõe o estado sem fornecer oracles próprios. Esses checks complementam a verificação de transformação descrita abaixo.
 
+Em OpenRouter, `outputShape` é uma opção explícita do adapter para gerar uma estrutura tipada: schema estrito + `provider.require_parameters`, envelope de transporte `json-envelope/1`, validação local e comparação com o gabarito independente. Os bytes do schema/instrução entram na reserva; shape e protocolo entram no fingerprint. O gabarito nunca é enviado ao provedor. Respostas compactadas rejeitadas colocam o perfil em `needs_reverification`, preservando o custo e sem nova inferência automática. Consulte [native-output-contracts.md](native-output-contracts.md). O gateway de passthrough continua fora desse contrato.
+
 O fluxo controlado é `texto → SemanticIR → codec por modelo/tarefa → provider → avaliação/saída`. O texto original acompanha o IR em memória e permanece o fallback. O analisador é heurístico e parcial; não reivindica compreensão completa ou entailment formal.
 
 | Componente | Responsabilidade atual |
