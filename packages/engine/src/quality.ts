@@ -76,7 +76,8 @@ export function parseStrictJson(text: string): unknown {
 
 export const ResponseContractSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("exact_text"), expected: z.string() }).strict(),
-  z.object({ kind: z.literal("exact_json"), expected: z.string() }).strict(),
+  z.object({ kind: z.literal("exact_json"), expected: z.string(),
+    normalization: z.literal("single_json_fence").optional() }).strict(),
 ]);
 export type ResponseContract = z.infer<typeof ResponseContractSchema>;
 export interface QualityResult {
@@ -86,18 +87,32 @@ export interface QualityResult {
 }
 
 /** Prepare before inference: malformed contracts must never cause a paid call. */
-export function prepareResponseValidator(input?: ResponseContract): (text: string) => QualityResult {
-  if (!input) return () => ({ status: "unverified", validator: null, reasons: ["no_response_contract"] });
+export function prepareResponseProcessor(input?: ResponseContract): (text: string) => {
+  outputText: string; normalization: "single_json_fence" | null; quality: QualityResult;
+} {
+  if (!input) return (outputText) => ({ outputText, normalization: null,
+    quality: { status: "unverified", validator: null, reasons: ["no_response_contract"] } });
   const contract = ResponseContractSchema.parse(input);
   const expected = contract.kind === "exact_json" ? parseStrictJson(contract.expected) : contract.expected;
   return (text) => {
+    // Only a whole, single JSON fence may be unwrapped. Never repair values or trailing prose.
+    const fenced = contract.kind === "exact_json" && contract.normalization === "single_json_fence"
+      ? /^\s*```json\r?\n([\s\S]*?)\r?\n```\s*$/.exec(text) : null;
+    const outputText = fenced?.[1] ?? text;
+    const normalization = fenced ? "single_json_fence" as const : null;
     let matches = false;
     try {
-      matches = contract.kind === "exact_json" ? isDeepStrictEqual(parseStrictJson(text), expected) : text === expected;
+      matches = contract.kind === "exact_json" ? isDeepStrictEqual(parseStrictJson(outputText), expected) : text === expected;
     } catch {
-      return { status: "rejected", validator: contract.kind, reasons: ["invalid_or_ambiguous_json"] };
+      return { outputText, normalization,
+        quality: { status: "rejected", validator: contract.kind, reasons: ["invalid_or_ambiguous_json"] } };
     }
-    return { status: matches ? "verified" : "rejected", validator: contract.kind,
-      reasons: matches ? [] : ["answer_mismatch"] };
+    return { outputText, normalization, quality: { status: matches ? "verified" : "rejected", validator: contract.kind,
+      reasons: matches ? [] : ["answer_mismatch"] } };
   };
+}
+
+export function prepareResponseValidator(input?: ResponseContract): (text: string) => QualityResult {
+  const process = prepareResponseProcessor(input);
+  return text => process(text).quality;
 }

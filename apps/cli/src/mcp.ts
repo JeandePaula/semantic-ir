@@ -5,7 +5,8 @@ import { analyzePrompt, sha256 } from "@semantic-ir/core";
 import type { TaskClass } from "@semantic-ir/core";
 import { auditPrompt, compilePrompt, DEFAULT_CODECS, diagnoseReport, JSON_EXTRACTION_SUITE, REDUNDANT_EXTRACTION_SUITE,
   RuntimeRouter, SYNTHETIC_SUITE, validateCompiled, executeLocalTask, LocalTaskSchema,
-  ResponseContractSchema, prepareResponseValidator, ResponseQualityError } from "@semantic-ir/engine";
+  ResponseContractSchema, prepareResponseValidator, ResponseQualityError,
+  JsonQuerySchema, compileJsonQuery } from "@semantic-ir/engine";
 import { adapterFor, openStore, providerFor, providerKey, runCalibration } from "./service.js";
 
 const result = (value: unknown) => ({
@@ -16,10 +17,15 @@ export async function startMcpServer(): Promise<void> {
   const store = openStore();
   const server = new McpServer({ name: "semantic-ir", version: "0.3.1" });
   server.registerTool("execute_local", {
-    description: "Execute an explicit versioned JSON selection or order-allocation contract locally. Zero downstream LLM calls. Does not infer rules from prose.",
+    description: "Execute an explicit versioned JSON selection, query pipeline or order-allocation contract locally. Zero downstream LLM calls. Does not infer rules from prose.",
     inputSchema: { task: LocalTaskSchema },
     annotations: { readOnlyHint: true, openWorldHint: false },
   }, ({ task }) => result(executeLocalTask(task)));
+  server.registerTool("plan_local_query", {
+    description: "Compile an explicit JSON query to a local typed plan with source hashes. Does not infer rules from prose or call a provider.",
+    inputSchema: { task: JsonQuerySchema },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  }, ({ task }) => result(compileJsonQuery(task)));
   server.registerTool("verify_response", {
     description: "Check a complete answer against a trusted exact text or JSON reference. Local; no provider calls. Valid JSON alone is not correctness.",
     inputSchema: { response: z.string().max(1_000_000), contract: ResponseContractSchema },
@@ -139,7 +145,7 @@ export async function startMcpServer(): Promise<void> {
       });
       return result({
         provider: providerFor(store), model: selectedModel,
-        response: routed.response.text, usage: routed.response.usage,
+        response: routed.outputText, normalization: routed.normalization, usage: routed.response.usage,
         latencyMs: routed.response.latencyMs,
         cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
         decision: routed.decision,

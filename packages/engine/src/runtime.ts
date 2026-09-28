@@ -6,10 +6,13 @@ import type {
 } from "@semantic-ir/core";
 import { compilePrompt } from "./codec.js";
 import type { SqliteStore } from "./storage.js";
-import { prepareResponseValidator, type QualityResult, type ResponseContract } from "./quality.js";
+import { prepareResponseProcessor, type QualityResult, type ResponseContract } from "./quality.js";
 
 export interface RoutedResponse {
   readonly response: ModelResponse;
+  /** Validated presentation; response.text preserves the provider's original evidence. */
+  readonly outputText: string;
+  readonly normalization: "single_json_fence" | null;
   readonly decision: RuntimeDecision;
   readonly semanticResult: SemanticIR | null;
   readonly structuredResult: unknown | null;
@@ -55,7 +58,6 @@ export class RuntimeRouter {
     const profile = this.store.getProfile(fingerprint.provider, fingerprint.model, ir.intent.task);
     if (!profile) return fallback("no_stable_profile");
     if (profile.fingerprintSha256 !== fingerprint.fingerprintSha256) {
-      this.store.markDrift(fingerprint.provider, fingerprint.model, ir.intent.task);
       return fallback("model_fingerprint_changed");
     }
     if (profile.status !== "stable") return fallback("profile_needs_reverification");
@@ -82,9 +84,12 @@ export class RuntimeRouter {
     maxOutputTokens?: number;
     responseContract?: ResponseContract;
   } = {}): Promise<RoutedResponse> {
-    const validateResponse = prepareResponseValidator(options.responseContract);
+    const processResponse = prepareResponseProcessor(options.responseContract);
     const route = await this.decide(prompt);
     const fingerprint = await this.adapter.getModelFingerprint();
+    if (route.decision.fallbackReason === "model_fingerprint_changed") {
+      this.store.markDrift(fingerprint.provider, fingerprint.model, route.decision.taskClass);
+    }
     const makeRequest = (text: string): ModelRequest => ({
       model: fingerprint.model, prompt: text, mode: options.mode ?? "safe",
       scope: options.scope ?? "application_request",
@@ -101,17 +106,18 @@ export class RuntimeRouter {
       codecId: decision.codecVersion, fallbackReason: decision.fallbackReason,
       usage: response.usage, cost, latencyMs: response.latencyMs,
     });
+    const processed = processResponse(response.text);
     const quality: QualityResult = response.completionStatus === "incomplete" || !response.text.trim()
       ? { status: "rejected", validator: options.responseContract?.kind ?? null, reasons: ["incomplete_response"] }
-      : validateResponse(response.text);
+      : processed.quality;
     if (quality.status === "rejected") throw new ResponseQualityError(quality, response.usage, cost, decision);
     let structuredResult: unknown = null;
     if (options.mode === "structured") {
-      try { structuredResult = JSON.parse(response.text) as unknown; } catch { /* unavailable */ }
+      try { structuredResult = JSON.parse(processed.outputText) as unknown; } catch { /* unavailable */ }
     }
     return {
-      response, decision, quality,
-      semanticResult: options.mode === "agent" ? analyzePrompt(response.text) : null,
+      response, decision, quality, outputText: processed.outputText, normalization: processed.normalization,
+      semanticResult: options.mode === "agent" ? analyzePrompt(processed.outputText) : null,
       structuredResult,
     };
   }

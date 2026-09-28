@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { sha256 } from "@semantic-ir/core";
 import { parseStrictJson } from "./quality.js";
+import { JsonPathSchema as path, checkedInteger as checked, readJsonPath as readPath } from "./json-data.js";
+import { JsonQuerySchema, executeJsonQuery } from "./query.js";
 
 const identifier = z.string().min(1).max(200);
 const integer = z.number().int().safe();
 const amount = integer.nonnegative();
-const path = z.array(z.union([z.string(), amount])).max(100);
 const lineSchema = z.object({ sku: identifier, qty: integer,
   quoted_price_cents: amount.optional() }).strict();
 export const AllocationInputSchema = z.object({
@@ -29,28 +30,12 @@ export const LocalTaskSchema = z.discriminatedUnion("kind", [
     select: path.optional(), cardinality: z.enum(["one", "many"]).optional(),
   }).strict(),
   z.object({ kind: z.literal("order_allocation_v1"), data: AllocationInputSchema }).strict(),
+  JsonQuerySchema,
 ]);
 export type LocalTask = z.infer<typeof LocalTaskSchema>;
 type AllocationInput = z.infer<typeof AllocationInputSchema>;
 
 const compare = (a: string, b: string): number => a < b ? -1 : a > b ? 1 : 0;
-function checked(value: bigint): number {
-  if (value > BigInt(Number.MAX_SAFE_INTEGER) || value < BigInt(Number.MIN_SAFE_INTEGER)) {
-    throw new Error("Arithmetic result exceeds safe JSON integer range");
-  }
-  return Number(value);
-}
-function readPath(data: unknown, parts: (string | number)[]): unknown {
-  let value = data;
-  for (const part of parts) {
-    if (value === null || typeof value !== "object" || !Object.hasOwn(value, part) ||
-      (Array.isArray(value) && (typeof part !== "number" || part >= value.length))) {
-      throw new Error("JSON path does not exist");
-    }
-    value = (value as Record<string | number, unknown>)[part];
-  }
-  return value;
-}
 
 /** Versioned business contract, explicitly selected by the caller; no NLP inference or code execution. */
 function allocate(data: AllocationInput) {
@@ -137,6 +122,7 @@ export function executeLocalTask(input: unknown) {
   parseStrictJson(JSON.stringify(task));
   let output: unknown;
   if (task.kind === "order_allocation_v1") output = allocate(task.data);
+  else if (task.kind === "json_query_v1") output = executeJsonQuery(task);
   else {
     let selected = readPath(task.data, task.path);
     if (task.where) {

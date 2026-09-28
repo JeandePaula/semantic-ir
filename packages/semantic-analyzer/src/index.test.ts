@@ -4,6 +4,15 @@ import { parseSemanticIR } from "@semantic-ir/semantic-ir";
 import { analyzePrompt } from "./index.js";
 
 describe("conservative analyzer", () => {
+  it("classifies instructions without treating payload keywords as commands", () => {
+    for (const payload of ['```json\n{"note":"implement code and debug"}\n```',
+      '{"note":"calculate then implement"}', '```python\n# implement code\n```']) {
+      const prompt = "Extract the requested value.\n" + payload;
+      expect(analyzePrompt(prompt).intent.task).toBe("extraction");
+      expect(analyzePrompt(prompt).source.text).toBe(prompt);
+    }
+    expect(analyzePrompt('{"note":"implement"}').intent.task).toBe("unknown");
+  });
   it("keeps the exact prompt and extracts the Portuguese regression case", () => {
     const prompt = "Altere 7500 para 8500, mas nunca modifique \x60/api/v1/users/{id}\x60.";
     const ir = analyzePrompt(prompt);

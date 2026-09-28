@@ -32,5 +32,12 @@ it("executes and verifies local file artifacts without opening a database or req
     expect(JSON.parse(failed.stdout)).toMatchObject({ status: "rejected" });
     writeFileSync(input, '{"kind":"json_select_v1","data":{"x":1,"x":2},"path":["x"]}');
     expect(cli("execute", "--file", input).status).toBe(1);
+    writeFileSync(input, JSON.stringify({ kind: "json_query_v1", data: [3, 1, 2], path: [],
+      steps: [{ op: "sort", by: [{ path: [], direction: "desc", type: "integer" }] }] }));
+    const plan = cli("plan", "--file", input);
+    expect(plan.status).toBe(0);
+    expect(JSON.parse(plan.stdout)).toMatchObject({ target: "local", providerCalls: 0 });
+    expect(JSON.parse(cli("execute", "--file", input).stdout).result).toEqual([3, 2, 1]);
+    expect(existsSync(db)).toBe(false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

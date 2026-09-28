@@ -130,14 +130,22 @@ function extractConstraints(prompt: string, literals: readonly LiteralSpan[]): {
 export function analyzePrompt(prompt: string): SemanticIR {
   if (prompt.length === 0) throw new Error("Prompt must not be empty");
   const literals = detectLiteralSpans(prompt);
-  const task = classifyTask(prompt);
+  // Payload strings/code are data, not evidence of the caller's requested task.
+  const instructionParts: string[] = [];
+  let cursor = 0;
+  for (const literal of literals) {
+    instructionParts.push(prompt.slice(cursor, literal.start));
+    cursor = literal.end;
+  }
+  instructionParts.push(prompt.slice(cursor));
+  const task = classifyTask(instructionParts.join("\n"));
   const { constraints, prohibitions } = extractConstraints(prompt, literals);
   return parseSemanticIR({
     version: "sir/0.1",
     source: { text: prompt, sha256: sha256(prompt) },
     intent: {
       task: task.task, confidence: task.confidence,
-      provenance: { kind: "heuristic", method: "task_keywords_v1" },
+      provenance: { kind: "heuristic", method: "task_keywords_outside_literals_v2" },
     },
     goals: [],
     facts: [],
@@ -155,7 +163,7 @@ export function analyzePrompt(prompt: string): SemanticIR {
     toolRequirements: [],
     literals,
     analysis: {
-      status: "partial", analyzerVersion: "baseline/0.1",
+      status: "partial", analyzerVersion: "baseline/0.2",
       confidence: 0.25,
       warnings: ["Heuristic annotations are incomplete; retain source text and use original-prompt fallback."],
     },

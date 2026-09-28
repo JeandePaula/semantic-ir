@@ -28,6 +28,10 @@
         },
         "expected": {
           "type": "string"
+        },
+        "normalization": {
+          "type": "string",
+          "const": "single_json_fence"
         }
       },
       "required": [

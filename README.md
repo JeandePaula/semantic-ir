@@ -45,7 +45,25 @@ Contracts are checked before spending. The final answer must match all fields, v
 
 Without a reference, responses are explicitly **unverified**. A reference must itself be trustworthy; copying a model answer into it proves nothing. For open-ended work, use task-specific tests or human-reviewed evaluation. A skill or a valid JSON schema cannot guarantee factual correctness.
 
+If the application accepts a single JSON Markdown fence, declare `"normalization":"single_json_fence"` in the `exact_json` contract before inference. The complete contents must still match. Default validation remains strict raw JSON. SDK `outputText` contains the validated presentation and `response.text` retains the raw provider answer; CLI/MCP report normalization metadata.
+
 ## Compression results
+
+### Cost diagnosis and local improvements — September 28, 2026
+
+The recent complex pair saved **$0.000061290 in input** but added **$0.000114100 in output**, including reasoning: the net increase was **$0.000052810 (+4.83%)**. At the recorded prices, 437.79 extra output tokens would exhaust the input savings; the response added 815. One pair cannot establish why generation length changed. Both answers also returned the approved orders in the wrong priority direction and failed the full reference.
+
+The new `json_query_v1` compiler runs explicit filter/sort/project/sum/count programs locally. The four recent extraction inputs plus the allocation input now match their frozen expected answers locally, **5/5 with zero downstream calls/tokens/cost**. Optional single-fence normalization verifies 8/8 saved extraction answers in an offline replay; historical strict scores remain 3/4 on each side, and both complex model answers still fail. No new paid calls or profile promotion were performed.
+
+Calibration now skips the candidate if the original fails, supports strict JSON-value oracles, and validates expectations before spending. Routing inspection no longer mutates profiles. See the [response analysis and research decisions](docs/semantic-compilation.md), [reproducible report](docs/reports/paid-response-analysis.json), and [query example](docs/examples/query.json). Research includes DSPy, LMQL, LLMCompiler and PAL; the implementation adopts explicit execution contracts without adding an LLM planner.
+
+```sh
+node apps/cli/bundle/main.js plan --file docs/examples/query.json
+node apps/cli/bundle/main.js execute --file docs/examples/query.json
+npm run analyze:paid
+```
+
+The example returns `["B","A"]`. Planning checks schema/operator order; execution checks actual field paths/types. Host inference and machine costs are outside the zero-downstream measurement. These local checks do not demonstrate a general improvement in model quality.
 
 ### Paid retest — September 27, 2026
 

@@ -9,6 +9,8 @@ import {
   REDUNDANT_EXTRACTION_SUITE, RuntimeRouter, SYNTHETIC_SUITE,
   type OpenAIPrice,
   executeLocalTask, parseStrictJson, prepareResponseValidator, ResponseContractSchema, ResponseQualityError,
+  hasScorableOracle,
+  compileJsonQuery,
 } from "@semantic-ir/engine";
 import { createGateway } from "./gateway.js";
 import { integrationReport } from "./hosts.js";
@@ -118,6 +120,10 @@ function suite(): BenchmarkSuite {
 
 async function main(): Promise<void> {
   // Pure local commands need neither a model nor a database or credentials.
+  if (command === "plan") {
+    print(compileJsonQuery(parseStrictJson(readFileSync(required("file"), "utf8"))));
+    return;
+  }
   if (command === "execute") {
     const input = parseStrictJson(readFileSync(required("file"), "utf8"));
     const executed = executeLocalTask(has("kind") ? { kind: required("kind"), data: input } : input);
@@ -150,6 +156,7 @@ async function main(): Promise<void> {
         "analyze PROMPT", "compile --codec ID PROMPT", "doctor", "profile", "codecs list|inspect",
         "audit --prompt PROMPT | --file PATH | --suite json-extraction|redundant-extraction|PATH (local, no provider calls)",
         "execute --file TASK.json [--out ANSWER.json] (local deterministic execution, no provider calls)",
+        "plan --file QUERY.json (inspect an explicit json_query_v1 program locally)",
         "execute --kind order_allocation_v1 --file INPUT.json [--out ANSWER.json]",
         "verify --contract CONTRACT.json --file ANSWER (local answer verification)",
         "invoke --allow-spend --max-output-tokens N --prompt PROMPT [--contract CONTRACT.json]",
@@ -216,7 +223,7 @@ async function main(): Promise<void> {
       if (has("suite")) {
         const selected = suite();
         print({ suite: selected.id, providerCalls: 0, cases: selected.cases
-          .filter((item) => item.oracleId === "exact")
+          .filter(hasScorableOracle)
           .map((item) => ({ caseId: item.id, ...auditPrompt(item.prompt) })) });
       } else {
         print(auditPrompt(has("file") ? readFileSync(required("file"), "utf8") : required("prompt")));
@@ -258,7 +265,7 @@ async function main(): Promise<void> {
       });
       print({
         provider: providerFor(store), model: selectedModel,
-        response: routed.response.text, usage: routed.response.usage,
+        response: routed.outputText, normalization: routed.normalization, usage: routed.response.usage,
         latencyMs: routed.response.latencyMs,
         cost: routed.response.cost ?? adapter.estimateCost(routed.response.usage),
         decision: routed.decision,

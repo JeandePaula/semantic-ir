@@ -1,12 +1,42 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseStrictJson, prepareResponseValidator } from "./quality.js";
+import { parseStrictJson, prepareResponseValidator, prepareResponseProcessor } from "./quality.js";
 import { RuntimeRouter, ResponseQualityError } from "./runtime.js";
 import { OpenAIAdapter } from "./openai.js";
 import { SqliteStore } from "./storage.js";
 
 describe("answer contracts", () => {
   afterEach(() => vi.unstubAllGlobals());
+  it("unwraps only an explicitly allowed single JSON fence and still validates every value", () => {
+    const process = prepareResponseProcessor({ kind: "exact_json", expected: '{"a":1}', normalization: "single_json_fence" });
+    expect(process('```json\n{"a":1}\n```')).toMatchObject({ outputText: '{"a":1}',
+      normalization: "single_json_fence", quality: { status: "verified" } });
+    for (const text of ['before\n```json\n{"a":1}\n```', '```json\n{"a":1}\n```\nafter',
+      '```json\n{"a":2}\n```', '```json\n{"a":1,"a":1}\n```', '```json\n{}\n```\n```json\n{"a":1}\n```']) {
+      expect(process(text).quality.status).toBe("rejected");
+    }
+    expect(prepareResponseValidator({ kind: "exact_json", expected: '{"a":1}' })('```json\n{"a":1}\n```').status).toBe("rejected");
+  });
+  it("returns normalized verified output while preserving raw provider evidence", async () => {
+    const raw = '```json\n{"answer":1}\n```';
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ model: "test",
+      choices: [{ finish_reason: "stop", message: { content: raw } }],
+      usage: { prompt_tokens: 10, completion_tokens: 10, cost: 0.001 },
+    }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const store = new SqliteStore(":memory:");
+    try {
+      const router = new RuntimeRouter(new OpenAIAdapter("test", { provider: "openrouter", apiKey: "fixture" }), store);
+      const result = await router.invoke("Extract answer", { mode: "structured", responseContract: {
+        kind: "exact_json", expected: '{"answer":1}', normalization: "single_json_fence",
+      } });
+      expect(result.response.text).toBe(raw);
+      expect(result.outputText).toBe('{"answer":1}');
+      expect(result.structuredResult).toEqual({ answer: 1 });
+      expect(result.quality.status).toBe("verified");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally { store.close(); }
+  });
   it("accepts JSON layout/key changes but rejects changed types, values, extra keys and array order", () => {
     const verify = prepareResponseValidator({ kind: "exact_json", expected: '{"a":[1,2],"b":true}' });
     expect(verify('{ "b": true, "a": [1, 2] }').status).toBe("verified");

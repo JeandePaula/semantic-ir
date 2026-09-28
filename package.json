@@ -16,6 +16,7 @@
     "check": "npm run typecheck && npm run lint && npm run test",
     "audit:savings": "npm run typecheck && node scripts/audit-savings.mjs",
     "verify:local": "npm run typecheck && node scripts/verify-local.mjs",
+    "analyze:paid": "npm run typecheck && node scripts/analyze-paid-results.mjs",
     "integrations:build": "node scripts/build-integrations.mjs",
     "cli:bundle": "node scripts/bundle-cli.mjs"
   },

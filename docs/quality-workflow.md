@@ -2,6 +2,8 @@
 
 ## Decision
 
+The [September 28 review](semantic-compilation.md) adds a typed local query compiler, DSPy/LMQL/LLMCompiler research, and an exact explanation of the recent 4.83% cost regression. Reproduce its offline response analysis with `npm run analyze:paid`.
+
 Use a skill to choose the workflow, with tested code enforcing explicit contracts. Keep the existing compiler, paid evaluation, and gateway for callers that need them. Do not replace the engine with prompt instructions alone: instructions cannot enforce arithmetic, reject a truncated answer, or account for a billed failure.
 
 The default order is: **explicit local operation → verified result → LLM only for work requiring interpretation**. Local operations are opt-in structured tasks, not a classifier that guesses the meaning of arbitrary prose. The initial contracts are `json_select_v1` and `order_allocation_v1`. New business rules need a new tested operation/version, not a silent change to an existing contract.

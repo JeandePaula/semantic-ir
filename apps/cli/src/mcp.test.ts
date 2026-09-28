@@ -21,6 +21,13 @@ describe("MCP stdio integration", () => {
       expect(tools.tools.map((item) => item.name)).toContain("analyze_prompt");
       expect(tools.tools.map((item) => item.name)).toContain("calibrate_model");
       expect(tools.tools.map((item) => item.name)).toContain("audit_prompt");
+      const query = { kind: "json_query_v1", data: [1, 2], path: [], steps: [{ op: "sum", path: [] }] };
+      for (const name of ["plan_local_query", "execute_local"]) {
+        const result = await client.callTool({ name, arguments: { task: query } });
+        const content = result.content[0];
+        if (content?.type !== "text") throw new Error("Expected query response");
+        expect(JSON.parse(content.text)).toMatchObject(name === "execute_local" ? { result: 3 } : { target: "local" });
+      }
       const executed = await client.callTool({ name: "execute_local", arguments: { task: {
         kind: "json_select_v1", data: { launch: { color: "GREEN" } }, path: ["launch", "color"],
       } } });

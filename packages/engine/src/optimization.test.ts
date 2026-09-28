@@ -4,7 +4,7 @@ import { analyzePrompt, sha256 } from "@semantic-ir/core";
 import type { ModelAdapter, ModelRequest, ModelResponse, BenchmarkSuite, CodecDefinition } from "@semantic-ir/core";
 import { auditPrompt, compilePrompt, validateCompiled, DEFAULT_CODECS, JSON_EXTRACTION_SUITE,
   REDUNDANT_EXTRACTION_SUITE, SYNTHETIC_SUITE, EvolutionaryOptimizer, SqliteStore,
-  BudgetLedger, RuntimeRouter, diagnoseReport, OpenAIAdapter } from "./index.js";
+  BudgetLedger, RuntimeRouter, diagnoseReport, OpenAIAdapter, benchmarkCodec } from "./index.js";
 import { compactJsonValue } from "./json.js";
 
 const jsonCodec = DEFAULT_CODECS.find((codec) => codec.id === "json_compact")!;
@@ -43,6 +43,38 @@ async function optimize(suite: BenchmarkSuite, codecs: readonly CodecDefinition[
       definitionSha256: "", status: "experimental", parentVersion: null })), budget });
   return { ...fixture, store, optimizer, run };
 }
+
+describe("calibration quality preflight", () => {
+  it("skips candidate spending when the baseline fails and leaves skipped metrics unknown", async () => {
+    const { adapter, invoke } = fixtureAdapter();
+    const suite = { ...JSON_EXTRACTION_SUITE, cases: [{ ...JSON_EXTRACTION_SUITE.cases[0]!, expectedOutput: "WRONG" }] };
+    const ledger = new BudgetLedger(budget);
+    const [result] = await benchmarkCodec({ adapter, codec: jsonCodec, suite, split: "calibration",
+      taskClass: "extraction", ledger, baselineCache: new Map() });
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(ledger.usedRequests).toBe(1);
+    expect(result).toMatchObject({ candidateSkipped: "baseline_failed", candidate: { costUsd: null, latencyMs: null, inputTokens: null },
+      evaluation: { passedHardGates: false, taskSuccess: null, behavioralEquivalence: null } });
+  });
+  it("validates all JSON oracles before spending and compares JSON values instead of key layout", async () => {
+    const { adapter, invoke } = fixtureAdapter();
+    const suite = { ...JSON_EXTRACTION_SUITE, cases: JSON_EXTRACTION_SUITE.cases.slice(0, 2).map(item => ({
+      ...item, oracleId: "exact_json", expectedOutput: '{"a":1,"b":2}',
+    })) };
+    suite.cases[1]!.expectedOutput = '{"a":1,"a":2}';
+    const options = { adapter, codec: jsonCodec, suite, split: "calibration" as const, taskClass: "extraction" as const,
+      ledger: new BudgetLedger(budget), baselineCache: new Map() };
+    await expect(benchmarkCodec(options)).rejects.toThrow(/Duplicate/);
+    expect(invoke).not.toHaveBeenCalled();
+    suite.cases[1]!.expectedOutput = '{"b":2,"a":1}';
+    const original = adapter.invoke;
+    adapter.invoke = async request => ({ ...await original(request), text: request.prompt.includes('    ')
+      ? '{"a":1,"b":2}' : '{ "b": 2, "a": 1 }' });
+    const results = await benchmarkCodec(options);
+    expect(results.every(item => item.evaluation.passedHardGates)).toBe(true);
+    expect(invoke).toHaveBeenCalledTimes(4);
+  });
+});
 
 describe("structural JSON compression", () => {
   it("preserves JSON values across generated arrays, strings and nested objects", () => {

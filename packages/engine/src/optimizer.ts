@@ -8,6 +8,7 @@ import { benchmarkCodec, BudgetLedger, type CaseResult } from "./benchmark.js";
 import { compilePrompt } from "./codec.js";
 import { MINIMUM_SAVINGS_BYTES } from "./audit.js";
 import type { SqliteStore } from "./storage.js";
+import { hasScorableOracle, prepareCaseOracle } from "./evaluator.js";
 
 function codecVersion(definition: CodecDefinition): CodecVersion {
   return {
@@ -61,6 +62,7 @@ export function diagnoseReport(report: OptimizationReport): string[] {
   const reasons = new Set<string>();
   if (!results.length) reasons.add("no_paid_evaluation_results");
   for (const item of results) {
+    if (item.candidateSkipped) reasons.add("candidate_skipped_baseline_failed");
     if (!item.evaluation.passedHardGates) reasons.add("task_or_preservation_gate_failed");
     if (item.baseline.costUsd === null || item.candidate.costUsd === null) reasons.add("cost_unavailable");
     if (item.candidate.inputTokens !== null && item.baseline.inputTokens !== null &&
@@ -92,7 +94,7 @@ export class EvolutionaryOptimizer implements Optimizer {
     const baselineCache = new Map<string, ModelResponse>();
     const scoredCalibration = input.suite.cases.filter((item) =>
       item.split === "calibration" && item.taskClass === input.taskClass &&
-      item.oracleId === "exact" && item.expectedOutput !== undefined);
+      hasScorableOracle(item));
     const screenedCandidates: { codecId: string; reason: string; savedBytes: number }[] = [];
     const signatures = new Set<string>();
     const seeds = input.seeds.map((seed) => seed.definition).filter((codec) => {
@@ -127,15 +129,15 @@ export class EvolutionaryOptimizer implements Optimizer {
 
     try {
       const scored = input.suite.cases.filter((item) => item.taskClass === input.taskClass &&
-        item.oracleId === "exact" && item.expectedOutput !== undefined);
+        hasScorableOracle(item));
+      for (const item of scored) prepareCaseOracle(item);
       if (new Set(scored.map((item) => item.id)).size !== scored.length ||
           new Set(scored.map((item) => item.prompt)).size !== scored.length) {
         throw new Error("Scored cases require distinct ids and prompts across splits");
       }
       for (const split of ["calibration", "validation", "holdout"] as const) {
         if (!input.suite.cases.some((item) => item.split === split &&
-            item.taskClass === input.taskClass && item.oracleId === "exact" &&
-            item.expectedOutput !== undefined)) {
+            item.taskClass === input.taskClass && hasScorableOracle(item))) {
           throw new Error("No scored " + split + " cases for task class " + input.taskClass);
         }
       }

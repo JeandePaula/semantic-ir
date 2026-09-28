@@ -159,7 +159,7 @@ export function createGateway(store: SqliteStore) {
         object: "chat.completion",
         created: Math.floor(Date.now() / 1000),
         model: body.model,
-        choices: [{ index: 0, message: { role: "assistant", content: routed.response.text },
+        choices: [{ index: 0, message: { role: "assistant", content: routed.outputText },
           finish_reason: "stop" }],
         usage: {
           prompt_tokens: usage.inputTokens, completion_tokens: usage.outputTokens,

@@ -1,0 +1,16 @@
+{
+  "kind": "json_query_v1",
+  "data": {
+    "records": [
+      { "id": "A", "active": true, "priority": 2, "cents": 400 },
+      { "id": "B", "active": true, "priority": 9, "cents": 800 },
+      { "id": "C", "active": false, "priority": 10, "cents": 100 }
+    ]
+  },
+  "path": ["records"],
+  "steps": [
+    { "op": "filter", "all": [{ "op": "eq", "path": ["active"], "value": true }] },
+    { "op": "sort", "by": [{ "path": ["priority"], "direction": "desc", "type": "integer" }] },
+    { "op": "project", "path": ["id"] }
+  ]
+}

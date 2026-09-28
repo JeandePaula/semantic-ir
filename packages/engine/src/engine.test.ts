@@ -81,6 +81,8 @@ describe("engine", () => {
     expect(store.metricsSummary().estimatedCostUsd).toBeGreaterThan(0);
     adapter.snapshot = "fake-2";
     expect((await router.decide(prompt)).decision.fallbackReason).toBe("model_fingerprint_changed");
+    expect(store.getProfile("fake", "test", "extraction")?.status).toBe("stable");
+    await router.invoke(prompt);
     expect(store.getProfile("fake", "test", "extraction")?.status).toBe("needs_reverification");
     store.close();
   });

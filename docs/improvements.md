@@ -1,5 +1,11 @@
 # Diagnóstico e melhorias
 
+## Revisão de custo e compilação — 28/09/2026
+
+A [análise completa](semantic-compilation.md) explica o aumento de 4,83%: a entrada economizou US$ 0,000061290, mas a saída acrescentou US$ 0,000114100. As duas respostas complexas também inverteram a direção da prioridade na lista de aprovados. A revisão acrescenta consultas locais declarativas, oracles JSON, normalização opcional e estrita de uma única cerca Markdown, interrupção antes da chamada candidata quando o original falha, classificação fora de literais e inspeção de perfis sem mutação.
+
+Os quatro casos recentes de extração e a alocação conferem integralmente com seus gabaritos na execução local, sem nova inferência paga. `npm run analyze:paid` reproduz o diagnóstico e preserva a evidência histórica. Os estudos DSPy, LMQL, LLMCompiler e PAL embasam as decisões, sem importar suas métricas como promessas do projeto.
+
 ## Novo teste pago — 27/09/2026
 
 O usuário autorizou até US$ 0,20. O [reteste OpenRouter](experiments/openrouter-compression-2026-09-27/README.md), com `z-ai/glm-5.3-flash`, adotou teto operacional menor de US$ 0,05 e encerrou após 13 tentativas, dez respostas e três retries por rate limit. Foram US$ 0,003130025 reportados pelo provider e US$ 0,005625485 contabilizados incluindo reservas sem cobrança confirmada.

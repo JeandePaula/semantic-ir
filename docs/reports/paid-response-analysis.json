@@ -1,0 +1,409 @@
+{
+  "method": "Offline price attribution, opt-in presentation replay and explicit local execution; no new inference",
+  "sourceFile": "docs/experiments/openrouter-compression-2026-09-27/results.json",
+  "sourceSha256": "824c3948d9567a41b12551d4a97637a97ca9709e53dcf64a413a9456fd924e4e",
+  "casesSha256": "93fbce072d235c572d56a4ace6b094624c4e0b7406c043d4a39cc3c6e69f6933",
+  "price": {
+    "version": "openrouter-catalog-6736d0489596",
+    "inputUsdPerMillion": 0.045,
+    "cachedInputUsdPerMillion": 0.045,
+    "outputUsdPerMillion": 0.14
+  },
+  "newProviderCalls": 0,
+  "newDownstreamCostUsd": 0,
+  "pairs": [
+    {
+      "caseId": "nested-color",
+      "repetition": 1,
+      "priceVersion": "openrouter-catalog-6736d0489596",
+      "baseline": {
+        "inputUsd": 0.000095985,
+        "outputUsd": 0.000014700000000000002,
+        "totalUsd": 0.000110685
+      },
+      "candidate": {
+        "inputUsd": 0.000052379999999999997,
+        "outputUsd": 0.000015260000000000003,
+        "totalUsd": 0.00006764
+      },
+      "inputDeltaUsd": -0.000043605,
+      "outputDeltaUsd": 5.600000000000014e-7,
+      "pricedDeltaUsd": -0.000043045000000000005,
+      "measuredDeltaUsd": -0.000043045000000000005,
+      "unexplainedDeltaUsd": 0,
+      "extraOutputTokens": 4,
+      "extraReasoningTokens": 0,
+      "extraOutputTokensAtBreakEven": 311.46428571428567,
+      "note": "Reasoning is included in output tokens; never add it again. Break-even assumes these prices and observed cache usage, not future behavior."
+    },
+    {
+      "caseId": "large-string-id",
+      "repetition": 1,
+      "priceVersion": "openrouter-catalog-6736d0489596",
+      "baseline": {
+        "inputUsd": 0.000116595,
+        "outputUsd": 0.00002674,
+        "totalUsd": 0.000143335
+      },
+      "candidate": {
+        "inputUsd": 0.00006848999999999999,
+        "outputUsd": 0.000013160000000000003,
+        "totalUsd": 0.00008164999999999999
+      },
+      "inputDeltaUsd": -0.000048105000000000015,
+      "outputDeltaUsd": -0.000013579999999999999,
+      "pricedDeltaUsd": -0.000061685,
+      "measuredDeltaUsd": -0.00006168499999999999,
+      "unexplainedDeltaUsd": 1.3552527156068805e-20,
+      "extraOutputTokens": -97,
+      "extraReasoningTokens": -74,
+      "extraOutputTokensAtBreakEven": 343.6071428571429,
+      "note": "Reasoning is included in output tokens; never add it again. Break-even assumes these prices and observed cache usage, not future behavior."
+    },
+    {
+      "caseId": "filtered-labels",
+      "repetition": 1,
+      "priceVersion": "openrouter-catalog-6736d0489596",
+      "baseline": {
+        "inputUsd": 0.00009544499999999999,
+        "outputUsd": 0.00005516,
+        "totalUsd": 0.000150605
+      },
+      "candidate": {
+        "inputUsd": 0.000052335,
+        "outputUsd": 0.00006188,
+        "totalUsd": 0.000114215
+      },
+      "inputDeltaUsd": -0.00004310999999999999,
+      "outputDeltaUsd": 0.000006719999999999997,
+      "pricedDeltaUsd": -0.000036389999999999995,
+      "measuredDeltaUsd": -0.000036389999999999995,
+      "unexplainedDeltaUsd": 0,
+      "extraOutputTokens": 48,
+      "extraReasoningTokens": 34,
+      "extraOutputTokensAtBreakEven": 307.92857142857133,
+      "note": "Reasoning is included in output tokens; never add it again. Break-even assumes these prices and observed cache usage, not future behavior."
+    },
+    {
+      "caseId": "structured-record",
+      "repetition": 1,
+      "priceVersion": "openrouter-catalog-6736d0489596",
+      "baseline": {
+        "inputUsd": 0.00009855,
+        "outputUsd": 0.00003122,
+        "totalUsd": 0.00012977
+      },
+      "candidate": {
+        "inputUsd": 0.000054315,
+        "outputUsd": 0.000038360000000000005,
+        "totalUsd": 0.000092675
+      },
+      "inputDeltaUsd": -0.000044235,
+      "outputDeltaUsd": 0.000007140000000000003,
+      "pricedDeltaUsd": -0.000037094999999999996,
+      "measuredDeltaUsd": -0.000037094999999999996,
+      "unexplainedDeltaUsd": 0,
+      "extraOutputTokens": 51,
+      "extraReasoningTokens": 49,
+      "extraOutputTokensAtBreakEven": 315.96428571428567,
+      "note": "Reasoning is included in output tokens; never add it again. Break-even assumes these prices and observed cache usage, not future behavior."
+    },
+    {
+      "caseId": "complex-allocation",
+      "repetition": 1,
+      "priceVersion": "openrouter-catalog-6736d0489596",
+      "baseline": {
+        "inputUsd": 0.00019116,
+        "outputUsd": 0.00090216,
+        "totalUsd": 0.00109332
+      },
+      "candidate": {
+        "inputUsd": 0.00012987,
+        "outputUsd": 0.0010162600000000002,
+        "totalUsd": 0.0011461300000000002
+      },
+      "inputDeltaUsd": -0.00006129,
+      "outputDeltaUsd": 0.00011410000000000012,
+      "pricedDeltaUsd": 0.00005281000000000014,
+      "measuredDeltaUsd": 0.00005280999999999992,
+      "unexplainedDeltaUsd": -2.168404344971009e-19,
+      "extraOutputTokens": 815,
+      "extraReasoningTokens": 380,
+      "extraOutputTokensAtBreakEven": 437.7857142857143,
+      "note": "Reasoning is included in output tokens; never add it again. Break-even assumes these prices and observed cache usage, not future behavior."
+    }
+  ],
+  "complexErrors": [
+    {
+      "version": "normal",
+      "differenceCount": 68,
+      "sections": {
+        "approved": false,
+        "rejected": false,
+        "cancelled": true,
+        "superseded_events": true,
+        "totals": false,
+        "remaining": false
+      },
+      "expectedApprovedIds": [
+        "O-002",
+        "O-010",
+        "O-001",
+        "O-003",
+        "O-011",
+        "O-012",
+        "O-014",
+        "O-015"
+      ],
+      "actualApprovedIds": [
+        "O-007",
+        "O-015",
+        "O-012",
+        "O-014",
+        "O-001",
+        "O-003",
+        "O-011",
+        "O-002"
+      ],
+      "actualApprovedPriorities": [
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        4
+      ],
+      "prioritiesNondecreasing": true,
+      "firstDifferences": [
+        {
+          "path": "$.approved.0.id",
+          "expected": "O-002",
+          "actual": "O-007"
+        },
+        {
+          "path": "$.approved.0.external_ref",
+          "expected": "90071992547409931002",
+          "actual": "90071992547409931007"
+        },
+        {
+          "path": "$.approved.0.warehouse",
+          "expected": "N",
+          "actual": "S"
+        },
+        {
+          "path": "$.approved.0.gross_cents",
+          "expected": 10500,
+          "actual": 16000
+        },
+        {
+          "path": "$.approved.0.discount_cents",
+          "expected": 525,
+          "actual": 1600
+        },
+        {
+          "path": "$.approved.0.net_cents",
+          "expected": 9975,
+          "actual": 14400
+        }
+      ]
+    },
+    {
+      "version": "compact",
+      "differenceCount": 70,
+      "sections": {
+        "approved": false,
+        "rejected": false,
+        "cancelled": true,
+        "superseded_events": true,
+        "totals": false,
+        "remaining": false
+      },
+      "expectedApprovedIds": [
+        "O-002",
+        "O-010",
+        "O-001",
+        "O-003",
+        "O-011",
+        "O-012",
+        "O-014",
+        "O-015"
+      ],
+      "actualApprovedIds": [
+        "O-007",
+        "O-015",
+        "O-012",
+        "O-014",
+        "O-001",
+        "O-003",
+        "O-011",
+        "O-002"
+      ],
+      "actualApprovedPriorities": [
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        4
+      ],
+      "prioritiesNondecreasing": true,
+      "firstDifferences": [
+        {
+          "path": "$.approved.0.id",
+          "expected": "O-002",
+          "actual": "O-007"
+        },
+        {
+          "path": "$.approved.0.external_ref",
+          "expected": "90071992547409931002",
+          "actual": "90071992547409931007"
+        },
+        {
+          "path": "$.approved.0.warehouse",
+          "expected": "N",
+          "actual": "S"
+        },
+        {
+          "path": "$.approved.0.gross_cents",
+          "expected": 10500,
+          "actual": 16000
+        },
+        {
+          "path": "$.approved.0.discount_cents",
+          "expected": 525,
+          "actual": 1600
+        },
+        {
+          "path": "$.approved.0.net_cents",
+          "expected": 9975,
+          "actual": 14400
+        }
+      ]
+    }
+  ],
+  "normalizedReplay": [
+    {
+      "caseId": "nested-color",
+      "version": "normal",
+      "historicalStatus": "verified",
+      "optInReplayStatus": "verified",
+      "normalization": null
+    },
+    {
+      "caseId": "nested-color",
+      "version": "compact",
+      "historicalStatus": "verified",
+      "optInReplayStatus": "verified",
+      "normalization": null
+    },
+    {
+      "caseId": "large-string-id",
+      "version": "compact",
+      "historicalStatus": "verified",
+      "optInReplayStatus": "verified",
+      "normalization": null
+    },
+    {
+      "caseId": "large-string-id",
+      "version": "normal",
+      "historicalStatus": "verified",
+      "optInReplayStatus": "verified",
+      "normalization": null
+    },
+    {
+      "caseId": "filtered-labels",
+      "version": "normal",
+      "historicalStatus": "verified",
+      "optInReplayStatus": "verified",
+      "normalization": null
+    },
+    {
+      "caseId": "filtered-labels",
+      "version": "compact",
+      "historicalStatus": "verified",
+      "optInReplayStatus": "verified",
+      "normalization": null
+    },
+    {
+      "caseId": "structured-record",
+      "version": "compact",
+      "historicalStatus": "rejected",
+      "optInReplayStatus": "verified",
+      "normalization": "single_json_fence"
+    },
+    {
+      "caseId": "structured-record",
+      "version": "normal",
+      "historicalStatus": "rejected",
+      "optInReplayStatus": "verified",
+      "normalization": "single_json_fence"
+    },
+    {
+      "caseId": "complex-allocation",
+      "version": "normal",
+      "historicalStatus": "rejected",
+      "optInReplayStatus": "rejected",
+      "normalization": null
+    },
+    {
+      "caseId": "complex-allocation",
+      "version": "compact",
+      "historicalStatus": "rejected",
+      "optInReplayStatus": "rejected",
+      "normalization": null
+    }
+  ],
+  "localReplay": [
+    {
+      "caseId": "nested-color",
+      "exactMatch": true,
+      "resultSha256": "9810ebc9bc35a91e6d93e227fff24625cd1e944221dbf6378e3a52152f16081f",
+      "providerCalls": 0,
+      "downstreamTokens": 0,
+      "downstreamCostUsd": 0
+    },
+    {
+      "caseId": "large-string-id",
+      "exactMatch": true,
+      "resultSha256": "0362466db8bc038095c4439f8e2d5d7c0304288afc0e699ae786eb87f8f02007",
+      "providerCalls": 0,
+      "downstreamTokens": 0,
+      "downstreamCostUsd": 0
+    },
+    {
+      "caseId": "filtered-labels",
+      "exactMatch": true,
+      "resultSha256": "0ff701d642dc04d581cb3df71478d15ffe0f6411a35527c03ea991cae312eab2",
+      "providerCalls": 0,
+      "downstreamTokens": 0,
+      "downstreamCostUsd": 0
+    },
+    {
+      "caseId": "structured-record",
+      "exactMatch": true,
+      "resultSha256": "1efdcf928fd4539c12b34fffc0ab7f954c65b7b2ba5d52c3b308bef5b2dcffc0",
+      "providerCalls": 0,
+      "downstreamTokens": 0,
+      "downstreamCostUsd": 0
+    },
+    {
+      "caseId": "complex-allocation",
+      "exactMatch": true,
+      "resultSha256": "2306d889f5dfd4fa5faf9dc522131de24499190767feaa4895ec4b7e24c46e9b",
+      "providerCalls": 0,
+      "downstreamTokens": 0,
+      "downstreamCostUsd": 0
+    }
+  ],
+  "limitations": [
+    "One complex pair cannot establish why output length changed; no internal reasoning text was captured.",
+    "Approved-order sequence is observed; internal processing steps are not observable.",
+    "Normalization replay uses a new opt-in contract and does not change historical strict failures or promote a profile.",
+    "Local mappings were explicitly reviewed against fixed rules; arbitrary prose equivalence is not established.",
+    "Zero local downstream cost excludes host inference, development, machine costs and historical spend."
+  ]
+}

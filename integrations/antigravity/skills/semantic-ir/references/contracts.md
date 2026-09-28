@@ -39,6 +39,20 @@ Rules are fixed and versioned:
 
 All monetary/quantity fields must be safe integers; discounts are 0–10000 basis points. Intermediate arithmetic uses BigInt. Unrepresentable JSON integer results, invalid references, duplicate products/stocks/routes, unknown fields, and over-reserved stock are errors. The solver does not interpret arbitrary natural-language instructions. If rules differ, this contract does not apply.
 
+## JSON query v1
+
+`{"kind":"json_query_v1","data":DATA,"path":["records"],"steps":[...]}` starts from an array. Steps run in declared order:
+
+- `{"op":"filter","all":[{"op":"eq","path":["active"],"value":true},{"op":"gte","path":["priority"],"value":2}]}`: conjunction of predicates. `eq` compares primitive values without coercion; `gt`, `gte`, `lt`, `lte` require safe integers. Every predicate path is checked, even if another is false.
+- `{"op":"sort","by":[{"path":["priority"],"direction":"desc","type":"integer"},{"path":["id"],"direction":"asc","type":"string"}]}`: stable multi-key ordering. Specify direction and type on every key. String comparison uses ordinal UTF-16 order; ties preserve input order.
+- `{"op":"project","path":["label"]}`: one value per row, preserving order.
+- `{"op":"sum","path":["cents"]}`: exact safe-integer sum via BigInt; overflow is rejected. Empty input returns zero.
+- `{"op":"count"}`: row count, including zero. `sum` and `count` must be last.
+
+An empty path addresses the current row/value. Missing fields, wrong key types, unknown operators/fields and steps after a scalar are rejected. Programs allow at most 32 steps, 32 predicates per filter and 16 sort keys. No expressions, implicit coercion, regex, network or dynamic code. Empty arrays have no row fields to validate.
+
+Use CLI `plan --file QUERY.json` or MCP `plan_local_query` to inspect operator input/output types and program/data hashes. Planning checks schema, source array and operator order; actual row paths/types are checked during `execute`. A plan does not prove equivalence to prose or certify the result. Execute using the same CLI `execute` / MCP `execute_local` path as other tasks. Return the exact result without model rewriting.
+
 ## Response verification
 
 ```json
@@ -52,3 +66,5 @@ All monetary/quantity fields must be safe integers; discounts are 0–10000 basi
 `exact_text` requires the entire string, including whitespace. `exact_json` ignores layout/object key order but requires all values, types, keys, and array order. Markdown fences, trailing text, duplicate keys, unsafe integers, and numbers whose decimal spelling would lose precision are rejected. Use strings for exact high-precision decimals. The reference must come from a trusted independent source. Passing a contract says nothing about whether the reference itself was correct.
 
 Use MCP `verify_response` or `semantic-ir verify --contract CONTRACT.json --file ANSWER.json` for a saved response. CLI exit status is nonzero on failure. For inference, use MCP `invoke_prompt.responseContract`, CLI `invoke --contract`, or SDK `RuntimeRouter.invoke(..., {responseContract})`. Contract validation occurs before spending; a response mismatch is rejected after recording its cost. No automatic paid retry is made.
+
+If accepting a surrounding Markdown fence is part of the application's contract, explicitly set `"normalization":"single_json_fence"` on `exact_json` before inference. Only a complete `json` fence is removed; the same strict parser and full-value comparison follow. Extra prose, multiple documents and incorrect values still fail. Do not use this option to silently relax a user's raw-JSON requirement or relabel a historical benchmark. Runtime `outputText` is the verified presentation; `response.text` retains provider evidence.

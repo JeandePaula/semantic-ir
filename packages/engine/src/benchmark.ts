@@ -4,7 +4,7 @@ import type {
 } from "@semantic-ir/core";
 import { analyzePrompt } from "@semantic-ir/core";
 import { compilePrompt } from "./codec.js";
-import { evaluateCase } from "./evaluator.js";
+import { evaluateCase, hasScorableOracle, prepareCaseOracle } from "./evaluator.js";
 
 const unscoredCases: BenchmarkCase[] = [
   ["instruction_following", "reasoning", "Follow these instructions in order: greet, then count."],
@@ -241,10 +241,11 @@ export interface CaseResult {
   readonly caseId: string;
   readonly split: BenchmarkCase["split"];
   readonly evaluation: EvaluationResult;
+  readonly candidateSkipped?: "baseline_failed";
   readonly baseline: { inputTokens: number | null; outputTokens: number | null; latencyMs: number;
     cachedInputTokens?: number | null; reasoningTokens?: number | null;
     costUsd: number | null; costEvidence: "measured" | "estimated" | "unavailable" };
-  readonly candidate: { inputTokens: number | null; outputTokens: number | null; latencyMs: number;
+  readonly candidate: { inputTokens: number | null; outputTokens: number | null; latencyMs: number | null;
     cachedInputTokens?: number | null; reasoningTokens?: number | null;
     costUsd: number | null; costEvidence: "measured" | "estimated" | "unavailable" };
 }
@@ -261,9 +262,11 @@ export async function benchmarkCodec(options: {
   stopOnFailure?: boolean;
 }): Promise<CaseResult[]> {
   const results: CaseResult[] = [];
-  for (const testCase of options.suite.cases.filter(
+  const cases = options.suite.cases.filter(
     (item) => item.split === options.split && item.taskClass === options.taskClass &&
-      item.oracleId === "exact" && item.expectedOutput !== undefined)) {
+      hasScorableOracle(item));
+  const oracles = cases.map(prepareCaseOracle);
+  for (const [index, testCase] of cases.entries()) {
     const ir = analyzePrompt(testCase.prompt);
     const compiled = compilePrompt(ir, options.codec);
     let baseline = options.baselineCache.get(testCase.id);
@@ -276,7 +279,7 @@ export async function benchmarkCodec(options: {
       });
       options.baselineCache.set(testCase.id, baseline);
     }
-    const candidate = compiled.text === testCase.prompt ? baseline : await options.ledger.invoke(options.adapter, {
+    const candidate = !oracles[index]!(baseline) ? null : compiled.text === testCase.prompt ? baseline : await options.ledger.invoke(options.adapter, {
       model: (await options.adapter.getModelFingerprint()).model,
       prompt: compiled.text, mode: "safe", maxOutputTokens, scope: "application_request",
       disableResponseCache: true,
@@ -297,9 +300,10 @@ export async function benchmarkCodec(options: {
       return { costUsd: null, costEvidence: "unavailable" as const };
     };
     const baseCost = costFor(baseline);
-    const candidateCost = costFor(candidate);
+    const candidateCost = candidate ? costFor(candidate) : { costUsd: null, costEvidence: "unavailable" as const };
     results.push({
       caseId: testCase.id, split: testCase.split, evaluation,
+      ...(candidate ? {} : { candidateSkipped: "baseline_failed" as const }),
       baseline: {
         inputTokens: baseline.usage.inputTokens,
         outputTokens: baseline.usage.outputTokens,
@@ -307,10 +311,10 @@ export async function benchmarkCodec(options: {
         latencyMs: baseline.latencyMs, ...baseCost,
       },
       candidate: {
-        inputTokens: candidate.usage.inputTokens,
-        outputTokens: candidate.usage.outputTokens,
-        cachedInputTokens: candidate.usage.cachedInputTokens, reasoningTokens: candidate.usage.reasoningTokens,
-        latencyMs: candidate.latencyMs, ...candidateCost,
+        inputTokens: candidate?.usage.inputTokens ?? null,
+        outputTokens: candidate?.usage.outputTokens ?? null,
+        cachedInputTokens: candidate?.usage.cachedInputTokens ?? null, reasoningTokens: candidate?.usage.reasoningTokens ?? null,
+        latencyMs: candidate?.latencyMs ?? null, ...candidateCost,
       },
     });
     if (options.stopOnFailure && (!evaluation.passedHardGates || baseCost.costUsd === null ||
