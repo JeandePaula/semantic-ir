@@ -1,0 +1,189 @@
+{
+  "provider": "openrouter",
+  "model": "z-ai/glm-5.3-flash",
+  "startedAt": "2026-09-28T05:35:31.366Z",
+  "finishedAt": "2026-09-28T05:35:33.459Z",
+  "status": "stopped",
+  "stopReason": "extraction_quality_gate_failed",
+  "settings": {
+    "reasoning": "default",
+    "responseCacheDisabled": true,
+    "extractionMaxOutputTokens": 512,
+    "complexMaxOutputTokens": 12288,
+    "qualityPolicy": "exact_json with predeclared single_json_fence normalization; raw JSON quality reported separately",
+    "temperature": "provider_default",
+    "pairedOrder": "alternating",
+    "stopRule": "Stop after first pair with either answer incorrect under the declared content contract; stop after a pair with unavailable cost; no profile promotion."
+  },
+  "budget": {
+    "userAuthorizedCostUsd": 0.2,
+    "maxRequests": 16,
+    "maxTokens": 150000,
+    "maxCostUsd": 0.05,
+    "maxDurationMs": 900000
+  },
+  "accounting": {
+    "requests": 2,
+    "returnedResponses": 2,
+    "accountedTokens": 3352,
+    "measuredCostUsd": 0.00052205,
+    "completeMeasuredCostUsd": 0.00052205,
+    "accountedCostUsd": 0.0005220500000000002,
+    "unresolvedReservedCostUsd": 2.168404344971009e-19,
+    "budgetMethod": "conservative_byte_envelope"
+  },
+  "groups": [
+    {
+      "group": "extraction",
+      "versions": {
+        "normal": {
+          "returnedCalls": 1,
+          "fullyCorrect": 1,
+          "incomplete": 0,
+          "inputTokens": 2133,
+          "cachedInputTokens": 0,
+          "outputTokens": 45,
+          "reasoningTokens": 39,
+          "totalTokens": 2178,
+          "measuredCostUsd": 0.00034245,
+          "observedCostPerCorrectReturnedAnswerUsd": 0.00034245
+        },
+        "compact": {
+          "returnedCalls": 1,
+          "fullyCorrect": 0,
+          "incomplete": 0,
+          "inputTokens": 1164,
+          "cachedInputTokens": 0,
+          "outputTokens": 10,
+          "reasoningTokens": 0,
+          "totalTokens": 1174,
+          "measuredCostUsd": 0.0001796,
+          "observedCostPerCorrectReturnedAnswerUsd": null
+        }
+      },
+      "pairs": [
+        {
+          "caseId": "nested-color",
+          "repetition": 1,
+          "bothReturned": true,
+          "bothCorrect": false,
+          "normalQuality": {
+            "status": "verified",
+            "validator": "exact_json",
+            "reasons": []
+          },
+          "compactQuality": {
+            "status": "rejected",
+            "validator": "exact_json",
+            "reasons": [
+              "answer_mismatch"
+            ]
+          },
+          "costReductionPercent": 47.554387501825076,
+          "verifiedLowerCost": false,
+          "bothUncached": true
+        },
+        {
+          "caseId": "large-string-id",
+          "repetition": 1,
+          "bothReturned": false,
+          "bothCorrect": false,
+          "normalQuality": null,
+          "compactQuality": null,
+          "costReductionPercent": null,
+          "verifiedLowerCost": false,
+          "bothUncached": false
+        },
+        {
+          "caseId": "filtered-labels",
+          "repetition": 1,
+          "bothReturned": false,
+          "bothCorrect": false,
+          "normalQuality": null,
+          "compactQuality": null,
+          "costReductionPercent": null,
+          "verifiedLowerCost": false,
+          "bothUncached": false
+        },
+        {
+          "caseId": "structured-record",
+          "repetition": 1,
+          "bothReturned": false,
+          "bothCorrect": false,
+          "normalQuality": null,
+          "compactQuality": null,
+          "costReductionPercent": null,
+          "verifiedLowerCost": false,
+          "bothUncached": false
+        }
+      ],
+      "completedPairs": 1,
+      "plannedPairs": 4,
+      "qualityPreservedInReturnedPairs": false,
+      "allPlannedPairsCompleted": false,
+      "allReturnedPairsPassQualityAndSavings": false,
+      "inputTokenReductionPercent": 45.42897327707455,
+      "totalTokenReductionPercent": 46.09733700642792,
+      "measuredCostReductionPercent": 47.554387501825076,
+      "successfulTaskSavingsPercent": null
+    },
+    {
+      "group": "complex",
+      "versions": {
+        "normal": {
+          "returnedCalls": 0,
+          "fullyCorrect": 0,
+          "incomplete": 0,
+          "inputTokens": null,
+          "cachedInputTokens": null,
+          "outputTokens": null,
+          "reasoningTokens": null,
+          "totalTokens": null,
+          "measuredCostUsd": null,
+          "observedCostPerCorrectReturnedAnswerUsd": null
+        },
+        "compact": {
+          "returnedCalls": 0,
+          "fullyCorrect": 0,
+          "incomplete": 0,
+          "inputTokens": null,
+          "cachedInputTokens": null,
+          "outputTokens": null,
+          "reasoningTokens": null,
+          "totalTokens": null,
+          "measuredCostUsd": null,
+          "observedCostPerCorrectReturnedAnswerUsd": null
+        }
+      },
+      "pairs": [
+        {
+          "caseId": "complex-allocation",
+          "repetition": 1,
+          "bothReturned": false,
+          "bothCorrect": false,
+          "normalQuality": null,
+          "compactQuality": null,
+          "costReductionPercent": null,
+          "verifiedLowerCost": false,
+          "bothUncached": false
+        }
+      ],
+      "completedPairs": 0,
+      "plannedPairs": 1,
+      "qualityPreservedInReturnedPairs": false,
+      "allPlannedPairsCompleted": false,
+      "allReturnedPairsPassQualityAndSavings": false,
+      "inputTokenReductionPercent": null,
+      "totalTokenReductionPercent": null,
+      "measuredCostReductionPercent": null,
+      "successfulTaskSavingsPercent": null
+    }
+  ],
+  "promoted": false,
+  "limitations": [
+    "Small paired sample; not statistical equivalence or a production guarantee.",
+    "Reasoning/output/cache variation is included in measured total cost; bytes are not tokens.",
+    "Per-version costs cover returned calls only; failed/unknown-billing reservations remain in overall accounting.",
+    "Complex prompts use direct experimental calls; the production risk gate remains unchanged."
+  ]
+}

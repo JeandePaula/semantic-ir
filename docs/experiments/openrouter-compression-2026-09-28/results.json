@@ -1,0 +1,257 @@
+{
+  "provider": "openrouter",
+  "model": "z-ai/glm-5.3-flash",
+  "startedAt": "2026-09-28T05:35:31.366Z",
+  "status": "stopped",
+  "casesSha256": "8a6a7f5fe1d7d6b5a02ec107e534a633b10b675fced9ceb4d199dc36096c6ed2",
+  "budget": {
+    "userAuthorizedCostUsd": 0.2,
+    "maxRequests": 16,
+    "maxTokens": 150000,
+    "maxCostUsd": 0.05,
+    "maxDurationMs": 900000
+  },
+  "plan": [
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    },
+    {
+      "caseId": "large-string-id",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "compact",
+        "normal"
+      ]
+    },
+    {
+      "caseId": "filtered-labels",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    },
+    {
+      "caseId": "structured-record",
+      "group": "extraction",
+      "repetition": 1,
+      "order": [
+        "compact",
+        "normal"
+      ]
+    },
+    {
+      "caseId": "complex-allocation",
+      "group": "complex",
+      "repetition": 1,
+      "order": [
+        "normal",
+        "compact"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-28T05:35:31.491Z",
+      "finishedAt": "2026-09-28T05:35:32.449Z",
+      "response": "\"CORAL\"",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 2133,
+        "cachedInputTokens": 0,
+        "outputTokens": 45,
+        "reasoningTokens": 39,
+        "totalTokens": 2178,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.00034245,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 956,
+      "providerRequestId": "gen-1790573731-SVL8uosvTYVVMOTS2M8o",
+      "quality": {
+        "status": "verified",
+        "validator": "exact_json",
+        "reasons": []
+      },
+      "strictQuality": {
+        "status": "verified",
+        "validator": "exact_json",
+        "reasons": []
+      },
+      "normalization": null,
+      "outputText": "\"CORAL\""
+    },
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-28T05:35:32.450Z",
+      "finishedAt": "2026-09-28T05:35:33.458Z",
+      "response": "{\"launch\":{\"color\":\"CORAL\"}}",
+      "completionStatus": "completed",
+      "usage": {
+        "inputTokens": 1164,
+        "cachedInputTokens": 0,
+        "outputTokens": 10,
+        "reasoningTokens": 0,
+        "totalTokens": 1174,
+        "source": "provider_usage"
+      },
+      "cost": {
+        "amountUsd": 0.0001796,
+        "status": "measured",
+        "priceVersion": null,
+        "category": "user_inference"
+      },
+      "latencyMs": 1007,
+      "providerRequestId": "gen-1790573732-AnTZ924MPqHkBDaLAUdU",
+      "quality": {
+        "status": "rejected",
+        "validator": "exact_json",
+        "reasons": [
+          "answer_mismatch"
+        ]
+      },
+      "strictQuality": {
+        "status": "rejected",
+        "validator": "exact_json",
+        "reasons": [
+          "answer_mismatch"
+        ]
+      },
+      "normalization": null,
+      "outputText": "{\"launch\":{\"color\":\"CORAL\"}}"
+    }
+  ],
+  "attempts": [
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "normal",
+      "startedAt": "2026-09-28T05:35:31.491Z",
+      "status": "returned"
+    },
+    {
+      "caseId": "nested-color",
+      "group": "extraction",
+      "repetition": 1,
+      "version": "compact",
+      "startedAt": "2026-09-28T05:35:32.450Z",
+      "status": "returned"
+    }
+  ],
+  "settings": {
+    "reasoning": "default",
+    "responseCacheDisabled": true,
+    "extractionMaxOutputTokens": 512,
+    "complexMaxOutputTokens": 12288,
+    "qualityPolicy": "exact_json with predeclared single_json_fence normalization; raw JSON quality reported separately",
+    "temperature": "provider_default",
+    "pairedOrder": "alternating",
+    "stopRule": "Stop after first pair with either answer incorrect under the declared content contract; stop after a pair with unavailable cost; no profile promotion."
+  },
+  "price": {
+    "version": "openrouter-catalog-5d17090311d6",
+    "inputUsdPerMillion": 0.15,
+    "cachedInputUsdPerMillion": 0.15,
+    "outputUsdPerMillion": 0.5
+  },
+  "fingerprint": {
+    "provider": "openrouter",
+    "model": "z-ai/glm-5.3-flash",
+    "snapshot": "z-ai/glm-5.3-flash",
+    "capabilities": {
+      "tokenCounting": false,
+      "reasoningMetadata": true,
+      "structuredOutput": false,
+      "tools": false,
+      "streaming": false,
+      "contextSize": null,
+      "tokenizerId": null
+    },
+    "fingerprintSha256": "8379d21f8eb5c0fcceb522e1533f408c9325f502fb1b66794a3a4cf60c030471",
+    "observedAt": "2026-09-28T05:35:31.476Z"
+  },
+  "runtimeDecisions": {
+    "nested-color": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "8379d21f8eb5c0fcceb522e1533f408c9325f502fb1b66794a3a4cf60c030471"
+    },
+    "large-string-id": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "8379d21f8eb5c0fcceb522e1533f408c9325f502fb1b66794a3a4cf60c030471"
+    },
+    "filtered-labels": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "8379d21f8eb5c0fcceb522e1533f408c9325f502fb1b66794a3a4cf60c030471"
+    },
+    "structured-record": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "model_fingerprint_changed",
+      "taskClass": "extraction",
+      "risk": "medium",
+      "fingerprintSha256": "8379d21f8eb5c0fcceb522e1533f408c9325f502fb1b66794a3a4cf60c030471"
+    },
+    "complex-allocation": {
+      "mode": "original",
+      "codecVersion": null,
+      "fallbackReason": "high_risk_or_low_classification_confidence",
+      "taskClass": "extraction",
+      "risk": "high",
+      "fingerprintSha256": "8379d21f8eb5c0fcceb522e1533f408c9325f502fb1b66794a3a4cf60c030471"
+    }
+  },
+  "profileStatusAfterInspection": {
+    "provider": "openrouter",
+    "model": "z-ai/glm-5.3-flash",
+    "taskClass": "extraction",
+    "fingerprintSha256": "3a2b1fe7a01bc15c0d89ab7af859ed00c25004cfe050ee1ba2757a4527dfb990",
+    "codecId": "json_compact",
+    "status": "needs_reverification",
+    "calibratedAt": "2026-09-26T18:09:02.109Z"
+  },
+  "plannedUpperCostUsd": 0.039894799999999994,
+  "accounting": {
+    "requests": 2,
+    "returnedResponses": 2,
+    "accountedTokens": 3352,
+    "measuredCostUsd": 0.00052205,
+    "completeMeasuredCostUsd": 0.00052205,
+    "accountedCostUsd": 0.0005220500000000002,
+    "unresolvedReservedCostUsd": 2.168404344971009e-19,
+    "budgetMethod": "conservative_byte_envelope"
+  },
+  "stopReason": "extraction_quality_gate_failed",
+  "finishedAt": "2026-09-28T05:35:33.459Z"
+}

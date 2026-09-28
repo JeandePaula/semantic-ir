@@ -49,6 +49,12 @@ If the application accepts a single JSON Markdown fence, declare `"normalization
 
 ## Compression results
 
+### Paid response retest — September 28, 2026
+
+The new OpenRouter / `z-ai/glm-5.3-flash` comparison stopped after its first pair under the predefined quality rule. Original: **`"CORAL"`**, correct, **$0.000342450**. Compact: **`{"launch":{"color":"CORAL"}}`**, incorrect output type, **$0.000179600**. Both completed with zero cached input. The compact call cost **47.55% less**, but failed both the content contract (including predeclared optional fence normalization) and strict raw-JSON reference comparison. This is not verified savings for a successful task.
+
+Total: **two calls, 3,352 tokens, $0.000522050 measured**. The other four planned pairs, including the complex case, were skipped to avoid spending after a quality failure. No profile was promoted. Catalog prices had changed to $0.15/M input and $0.50/M output; comparisons use identical settings and rates within the pair. See the [full report and raw evidence](docs/experiments/openrouter-compression-2026-09-28/README.md). Local execution remains the verified route for these explicit operations; the new code does not guarantee model adherence to the prompt.
+
 ### Cost diagnosis and local improvements — September 28, 2026
 
 The recent complex pair saved **$0.000061290 in input** but added **$0.000114100 in output**, including reasoning: the net increase was **$0.000052810 (+4.83%)**. At the recorded prices, 437.79 extra output tokens would exhaust the input savings; the response added 815. One pair cannot establish why generation length changed. Both answers also returned the approved orders in the wrong priority direction and failed the full reference.
